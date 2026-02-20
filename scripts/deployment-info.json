@@ -1,0 +1,13 @@
+{
+  "network": "starknet-sepolia",
+  "timestamp": "2026-02-18T23:46:07.592Z",
+  "deployer": "0x063a29c74fd5992b0e4042dbdd227bf835c555170a11e4bd492703cd6fee3271",
+  "classHashes": {
+    "SCORE_REGISTRY": "0x76cc587a9c905efe4f0294ab8dea25e6d70c079c5eadb18b1bfdb8c0132a0ee",
+    "LENDING_POOL": "0x68226506a81f358c796de22e841f7501769a26b1cd668981c08c8b0c32a4268"
+  },
+  "addresses": {
+    "SCORE_REGISTRY": "0x42ac49b99c59141f28f5a1e73a7b890dbb227e9c36ec9600cc99dfedc4a58e8",
+    "LENDING_POOL": "0x76815dbee38587075d2c79aaf55a795c8724d06a9b7d3660b5d5bb6d4adb36d"
+  }
+}

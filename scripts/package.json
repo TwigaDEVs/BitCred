@@ -1,0 +1,16 @@
+{
+  "name": "bitcred-deployment",
+  "version": "1.0.0",
+  "description": "BitCred contract deployment scripts",
+  "main": "deploy.js",
+  "scripts": {
+    "deploy": "node deploy.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "starknet": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
