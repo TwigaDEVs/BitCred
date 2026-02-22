@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <defs>
+    <linearGradient id="btcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F7931A"/>
+      <stop offset="50%" style="stop-color:#EC796B"/>
+      <stop offset="100%" style="stop-color:#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0f1e"/>
+      <stop offset="100%" style="stop-color:#0d1526"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softglow">
+      <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="320" height="80" rx="12" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle border -->
+  <rect width="320" height="80" rx="12" fill="none" stroke="url(#btcGrad)" stroke-width="1" opacity="0.4"/>
+
+  <!-- Icon: Hexagon shield with BTC symbol -->
+  <g transform="translate(20, 12)">
+    <!-- Hexagon -->
+    <polygon points="28,2 50,14 50,42 28,54 6,42 6,14" 
+             fill="none" stroke="url(#btcGrad)" stroke-width="1.5" opacity="0.8" filter="url(#softglow)"/>
+    <polygon points="28,2 50,14 50,42 28,54 6,42 6,14" 
+             fill="url(#btcGrad)" opacity="0.08"/>
+
+    <!-- Bitcoin ₿ symbol -->
+    <text x="28" y="36" 
+          font-family="Georgia, serif" 
+          font-size="26" 
+          font-weight="bold"
+          text-anchor="middle" 
+          fill="url(#btcGrad)" 
+          filter="url(#glow)"
+          opacity="0.95">₿</text>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(76, 0)">
+    <!-- BIT -->
+    <text x="0" y="48" 
+          font-family="'Courier New', Courier, monospace" 
+          font-size="34" 
+          font-weight="700"
+          letter-spacing="1"
+          fill="#F7931A"
+          filter="url(#softglow)">BIT</text>
+    <!-- CRED -->
+    <text x="72" y="48" 
+          font-family="'Courier New', Courier, monospace" 
+          font-size="34" 
+          font-weight="700"
+          letter-spacing="1"
+          fill="#e2e8f0">CRED</text>
+  </g>
+
+  <!-- Tagline -->
+  <text x="76" y="66" 
+        font-family="'Courier New', Courier, monospace" 
+        font-size="9" 
+        letter-spacing="3"
+        fill="#3B82F6"
+        opacity="0.8">BITCOIN CREDIT ON STARKNET</text>
+
+  <!-- Decorative dots top right -->
+  <circle cx="298" cy="14" r="2" fill="#F7931A" opacity="0.5"/>
+  <circle cx="308" cy="14" r="2" fill="#EC796B" opacity="0.5"/>
+  <circle cx="298" cy="24" r="2" fill="#3B82F6" opacity="0.5"/>
+  <circle cx="308" cy="24" r="2" fill="#F7931A" opacity="0.3"/>
+</svg>
