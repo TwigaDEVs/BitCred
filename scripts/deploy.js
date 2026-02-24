@@ -19,10 +19,10 @@ if (!account_address || !private_key) {
 
 const RPC_ENDPOINTS = [
   process.env.STARKNET_RPC_URL,
-  "https://starknet-sepolia.public.blastapi.io/rpc/v0_9",
-  "https://starknet-sepolia.drpc.org",
-  "https://rpc.starknet-testnet.lava.build",
+  "https://starknet-sepolia.g.alchemy.com/v2/demo",
+  "https://starknet-sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
   "https://free-rpc.nethermind.io/sepolia-juno",
+  "https://rpc.starknet-testnet.lava.build",
 ].filter(Boolean);
 
 async function getWorkingProvider() {
@@ -30,9 +30,18 @@ async function getWorkingProvider() {
     try {
       console.log(`   Trying: ${url}`);
       const p = new RpcProvider({ nodeUrl: url, retries: 2 });
-      await p.getSpecVersion(); // lightweight connectivity check
-      console.log(`   ✅ Connected!\n`);
-      return p;
+      
+      // Try a simpler method first
+      try {
+        await p.getChainId();
+        console.log(`   ✅ Connected (chain ID: ${await p.getChainId()}!\n`);
+        return p;
+      } catch {
+        // Fallback to block number check
+        await p.getBlockNumber();
+        console.log(`   ✅ Connected!\n`);
+        return p;
+      }
     } catch {
       console.log(`   ❌ Unreachable\n`);
     }
@@ -43,16 +52,22 @@ async function getWorkingProvider() {
 const CONTRACTS = {
   SCORE_REGISTRY: "ScoreRegistry",
   LENDING_POOL:   "LendingPool",
+  MOCK_WBTC:      "MockWBTC",      
+  MOCK_USDC:      "MockUSDC",      
 };
 
 const CLASS_HASHES = {
   SCORE_REGISTRY: "",
   LENDING_POOL:   "",
+  MOCK_WBTC:      "",              
+  MOCK_USDC:      "",              
 };
 
 const DEPLOYED_ADDRESSES = {
   SCORE_REGISTRY: "",
   LENDING_POOL:   "",
+  MOCK_WBTC:      "",              
+  MOCK_USDC:      "",              
 };
 
 function loadContract(contractName) {
@@ -136,8 +151,12 @@ async function declareAll(provider, account) {
   console.log("=".repeat(60));
 
   CLASS_HASHES.SCORE_REGISTRY = await declareContract(provider, account, CONTRACTS.SCORE_REGISTRY);
+  await new Promise(r => setTimeout(r, 5000));
 
-  console.log(`\n⏳ Waiting 5s before next declaration...`);
+  CLASS_HASHES.MOCK_WBTC = await declareContract(provider, account, CONTRACTS.MOCK_WBTC);
+  await new Promise(r => setTimeout(r, 5000));
+
+  CLASS_HASHES.MOCK_USDC = await declareContract(provider, account, CONTRACTS.MOCK_USDC);
   await new Promise(r => setTimeout(r, 5000));
 
   CLASS_HASHES.LENDING_POOL = await declareContract(provider, account, CONTRACTS.LENDING_POOL);
@@ -147,46 +166,54 @@ async function declareAll(provider, account) {
   console.log("=".repeat(60));
   console.log("\nClass Hashes:");
   console.log("  SCORE_REGISTRY:", CLASS_HASHES.SCORE_REGISTRY);
+  console.log("  MOCK_WBTC:     ", CLASS_HASHES.MOCK_WBTC);
+  console.log("  MOCK_USDC:     ", CLASS_HASHES.MOCK_USDC);
   console.log("  LENDING_POOL:  ", CLASS_HASHES.LENDING_POOL);
 }
+
 
 async function deployAll(provider, account) {
   console.log("\n" + "=".repeat(60));
   console.log("STEP 2: DEPLOYING CONTRACTS");
   console.log("=".repeat(60));
 
-  if (!CLASS_HASHES.SCORE_REGISTRY || !CLASS_HASHES.LENDING_POOL) {
-    throw new Error("CLASS_HASHES are empty — declareAll() must run first.");
-  }
-
-  // ── Deploy ScoreRegistry ────────────────────────────────────────────────
-  // constructor(admin: ContractAddress)
+  // Deploy ScoreRegistry
   DEPLOYED_ADDRESSES.SCORE_REGISTRY = await deployContract(
     provider, account,
     CONTRACTS.SCORE_REGISTRY,
     CLASS_HASHES.SCORE_REGISTRY,
-    [account_address],  // admin = deployer wallet
+    [account_address],
   );
-
-  console.log(`\n⏳ Waiting 10s before next deployment...`);
   await new Promise(r => setTimeout(r, 10000));
 
-  // ── Deploy LendingPool ──────────────────────────────────────────────────
-  // constructor(admin, score_registry, collateral_token, borrow_token, interest_rate)
-  const WBTC_SEPOLIA  = process.env.WBTC_ADDRESS  || "0x0";
-  const USDC_SEPOLIA  = process.env.USDC_ADDRESS  || "0x0";
-  const INTEREST_RATE = 500; 
+  // Deploy Mock Tokens
+  DEPLOYED_ADDRESSES.MOCK_WBTC = await deployContract(
+    provider, account,
+    CONTRACTS.MOCK_WBTC,
+    CLASS_HASHES.MOCK_WBTC,
+    [],
+  );
+  await new Promise(r => setTimeout(r, 10000));
 
+  DEPLOYED_ADDRESSES.MOCK_USDC = await deployContract(
+    provider, account,
+    CONTRACTS.MOCK_USDC,
+    CLASS_HASHES.MOCK_USDC,
+    [],
+  );
+  await new Promise(r => setTimeout(r, 10000));
+
+  // Deploy LendingPool with mock token addresses
   DEPLOYED_ADDRESSES.LENDING_POOL = await deployContract(
     provider, account,
     CONTRACTS.LENDING_POOL,
     CLASS_HASHES.LENDING_POOL,
     [
-      account_address,                        
-      DEPLOYED_ADDRESSES.SCORE_REGISTRY,     
-      WBTC_SEPOLIA,                           
-      USDC_SEPOLIA,                           
-      INTEREST_RATE,                          
+      account_address,
+      DEPLOYED_ADDRESSES.SCORE_REGISTRY,
+      DEPLOYED_ADDRESSES.MOCK_WBTC,    // Use our mock WBTC
+      DEPLOYED_ADDRESSES.MOCK_USDC,    // Use our mock USDC
+      500,                              // 5% interest
     ],
   );
 
@@ -205,11 +232,15 @@ async function deployAll(provider, account) {
   console.log("=".repeat(60));
   console.log("\nDeployed Addresses:");
   console.log("  SCORE_REGISTRY:", DEPLOYED_ADDRESSES.SCORE_REGISTRY);
+  console.log("  MOCK_WBTC:     ", DEPLOYED_ADDRESSES.MOCK_WBTC);
+  console.log("  MOCK_USDC:     ", DEPLOYED_ADDRESSES.MOCK_USDC);
   console.log("  LENDING_POOL:  ", DEPLOYED_ADDRESSES.LENDING_POOL);
   console.log("\n💾 Saved to deployment-info.json");
-  console.log("\n📋 Add these to your backend .env:");
+  console.log("\n📋 Update your .env and frontend:");
   console.log(`  REGISTRY_ADDRESS=${DEPLOYED_ADDRESSES.SCORE_REGISTRY}`);
   console.log(`  LENDING_ADDRESS=${DEPLOYED_ADDRESSES.LENDING_POOL}`);
+  console.log(`  MOCK_WBTC_ADDRESS=${DEPLOYED_ADDRESSES.MOCK_WBTC}`);
+  console.log(`  MOCK_USDC_ADDRESS=${DEPLOYED_ADDRESSES.MOCK_USDC}`);
 }
 
 async function verifyDeployments(provider) {
@@ -232,6 +263,23 @@ async function verifyDeployments(provider) {
     } catch {
       console.log(`❌ ${name}: ${address} — NOT FOUND on chain`);
     }
+  }
+}
+
+async function checkBalance(provider, address) {
+  try {
+    // Try different methods to get balance
+    try {
+      const balance = await provider.getBalance(address);
+      console.log("Balance:", balance.toString());
+      return;
+    } catch {
+      // Fallback: try to get the account's nonce as a sign it's alive
+      const nonce = await provider.getNonce(address);
+      console.log("Account nonce:", nonce);
+    }
+  } catch {
+    console.log("⚠️  Could not fetch account info");
   }
 }
 
@@ -259,13 +307,10 @@ async function main() {
     deployer: defaultDeployer,
   });
 
-  // Check balance
-  try {
-    const balance = await provider.getBalance(account_address);
-    console.log("Balance:", balance.toString(), "\n");
-  } catch {
-    console.log("⚠️  Could not fetch balance\n");
-  }
+  // Check account info
+  console.log("\n📊 Account Info:");
+  await checkBalance(provider, account_address);
+  console.log("");
 
   // Step 1: Declare
   await declareAll(provider, account);

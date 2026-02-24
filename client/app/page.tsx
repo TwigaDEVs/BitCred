@@ -5,7 +5,7 @@ export default function HomePage() {
   return (
     <div className="gradient-bg">
       {/* Hero Section */}
-      <section className="container py-24 md:py-32">
+      <section className="container py-24 md:py-32 flex items-center justify-center">
         <div className="mx-auto max-w-4xl text-center space-y-8">
           <div className="inline-block">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary ring-1 ring-inset ring-primary/20">
@@ -59,53 +59,55 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section id="how-it-works" className="container py-24">
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold">How BitCred Works</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Three simple steps to unlock better lending terms
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Step 1 */}
-          <div className="glass p-8 rounded-2xl card-hover space-y-4">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center bitcoin-glow">
-              <Shield className="w-6 h-6 text-bitcoin" />
-            </div>
-            <h3 className="text-xl font-semibold">1. Connect Bitcoin Wallet</h3>
-            <p className="text-muted-foreground">
-              Link your Bitcoin address. No private keys shared — only read-only access to on-chain history.
+      <section id="how-it-works" className="container py-24 flex items-center justify-center">
+        <div className="w-full">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold">How BitCred Works</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Three simple steps to unlock better lending terms
             </p>
           </div>
 
-          {/* Step 2 */}
-          <div className="glass p-8 rounded-2xl card-hover space-y-4">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center neon-glow">
-              <Lock className="w-6 h-6 text-primary" />
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Step 1 */}
+            <div className="glass p-8 rounded-2xl card-hover space-y-4">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center bitcoin-glow">
+                <Shield className="w-6 h-6 text-bitcoin" />
+              </div>
+              <h3 className="text-xl font-semibold">1. Connect Bitcoin Wallet</h3>
+              <p className="text-muted-foreground">
+                Link your Bitcoin address. No private keys shared — only read-only access to on-chain history.
+              </p>
             </div>
-            <h3 className="text-xl font-semibold">2. Generate ZK Proof</h3>
-            <p className="text-muted-foreground">
-              AI analyzes your hodl duration, transaction frequency, and balance stability privately using zero-knowledge proofs.
-            </p>
-          </div>
 
-          {/* Step 3 */}
-          <div className="glass p-8 rounded-2xl card-hover space-y-4">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center starknet-glow">
-              <TrendingUp className="w-6 h-6 text-starknet" />
+            {/* Step 2 */}
+            <div className="glass p-8 rounded-2xl card-hover space-y-4">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center neon-glow">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold">2. Generate ZK Proof</h3>
+              <p className="text-muted-foreground">
+                AI analyzes your hodl duration, transaction frequency, and balance stability privately using zero-knowledge proofs.
+              </p>
             </div>
-            <h3 className="text-xl font-semibold">3. Get Better Terms</h3>
-            <p className="text-muted-foreground">
-              Receive your score (650-850) and unlock personalized collateral ratios for DeFi lending on Starknet.
-            </p>
+
+            {/* Step 3 */}
+            <div className="glass p-8 rounded-2xl card-hover space-y-4">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center starknet-glow">
+                <TrendingUp className="w-6 h-6 text-starknet" />
+              </div>
+              <h3 className="text-xl font-semibold">3. Get Better Terms</h3>
+              <p className="text-muted-foreground">
+                Receive your score (650-850) and unlock personalized collateral ratios for DeFi lending on Starknet.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Benefits Section */}
-      <section className="container py-24">
-        <div className="grid md:grid-cols-2 gap-16 items-center">
+      <section className="container py-24 flex items-center justify-center">
+        <div className="grid md:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
           <div className="space-y-6">
             <h2 className="text-3xl md:text-5xl font-bold">
               Rewards for Diamond Hands 💎
@@ -179,7 +181,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="container py-24">
+      <section className="container py-24 flex items-center justify-center">
         <div className="glass p-12 rounded-3xl text-center space-y-6 max-w-3xl mx-auto gradient-border">
           <h2 className="text-3xl md:text-4xl font-bold">
             Ready to unlock better lending terms?

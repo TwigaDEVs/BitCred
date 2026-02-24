@@ -64,8 +64,6 @@ export async function healthCheck(): Promise<{ status: string }> {
   return data;
 }
 
-// Add to client/lib/api.ts
-
 export async function getVesuPosition(starknetAddress: string) {
   const { data } = await api.get(`/vesu/position/${starknetAddress}`);
   return data;

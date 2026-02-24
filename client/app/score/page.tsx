@@ -115,8 +115,8 @@ export default function ScorePage() {
   };
 
   return (
-    <div className="gradient-bg min-h-screen py-12">
-      <div className="container max-w-7xl">
+    <div className="gradient-bg min-h-screen py-12 flex items-center justify-center">
+      <div className="container max-w-7xl mx-auto px-4">
         <div className="text-center space-y-4 mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
             <Sparkles className="w-4 h-4" />

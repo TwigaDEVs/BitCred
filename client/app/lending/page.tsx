@@ -1,4 +1,3 @@
-// client/app/lending/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -49,13 +48,22 @@ export default function LendingPage() {
     setError(null);
 
     try {
-      const [positionData, liquidityData] = await Promise.all([
-        getVesuPosition(address),
-        getVesuLiquidity(),
-      ]);
-      
-      setPosition(positionData);
-      setLiquidity(liquidityData);
+      if (vesuService) {
+        const positionData = await vesuService.getPosition(address);
+        
+        const liquidityData = await getVesuLiquidity();
+        
+        setPosition(positionData);
+        setLiquidity(liquidityData);
+      } else {
+        const [positionData, liquidityData] = await Promise.all([
+          getVesuPosition(address),
+          getVesuLiquidity(),
+        ]);
+        
+        setPosition(positionData);
+        setLiquidity(liquidityData);
+      }
     } catch (err: any) {
       console.error('Failed to load Vesu data:', err);
       setError(err.response?.data?.detail || err.message || 'Failed to load data');
@@ -126,8 +134,8 @@ export default function LendingPage() {
 
   if (status !== 'connected') {
     return (
-      <div className="gradient-bg min-h-screen py-12">
-        <div className="container max-w-4xl">
+      <div className="gradient-bg min-h-screen py-12 flex items-center justify-center">
+        <div className="container max-w-4xl mx-auto px-4">
           <div className="glass p-16 rounded-2xl text-center space-y-6">
             <div className="w-20 h-20 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
               <Wallet className="w-10 h-10 text-muted-foreground" />
@@ -143,9 +151,9 @@ export default function LendingPage() {
   }
 
   return (
-    <div className="gradient-bg min-h-screen py-12">
-      <div className="container max-w-7xl">
-        <div className="mb-12">
+    <div className="gradient-bg min-h-screen py-12 flex items-center justify-center">
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="mb-12 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             <Bitcoin className="w-4 h-4" />
             Powered by Vesu Protocol
