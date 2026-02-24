@@ -1,17 +1,3 @@
-"""
-Deploy BitCred contracts to Starknet Sepolia testnet.
-
-Usage:
-    python deploy.py \
-        --private-key 0x... \
-        --account 0x...
-
-Prerequisites:
-    1. pip install starknet-py
-    2. scarb build completed in ../contracts
-    3. Account funded on Sepolia
-"""
-
 import asyncio
 import argparse
 import json
@@ -23,7 +9,6 @@ from starknet_py.net.models.chains import StarknetChainId
 from starknet_py.net.signer.stark_curve_signer import KeyPair
 from starknet_py.contract import Contract
 
-# ─── Config ───────────────────────────────────────────────────────────────────
 
 RPC_ENDPOINTS = [
     os.getenv("STARKNET_RPC_URL"),
@@ -32,11 +17,7 @@ RPC_ENDPOINTS = [
     "https://free-rpc.nethermind.io/sepolia-juno",
 ]
 
-# Scarb outputs: contracts/target/dev/contracts_<Name>.contract_class.json
 ARTIFACTS_DIR = Path(__file__).parent.parent / "contracts" / "target" / "dev"
-
-
-# ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def load_contract(contract_name: str) -> tuple[dict, dict]:
     """Load Sierra + CASM from Scarb build artifacts."""
@@ -69,8 +50,6 @@ async def get_working_client() -> FullNodeClient:
     raise ConnectionError("All RPC endpoints failed.")
 
 
-# ─── Declare + Deploy ─────────────────────────────────────────────────────────
-
 async def declare_and_deploy(account: Account, contract_name: str, constructor_args: list) -> int:
     """Declare if needed, then deploy. Returns deployed contract address."""
     print(f"📝 Declaring {contract_name}...")
@@ -95,8 +74,6 @@ async def declare_and_deploy(account: Account, contract_name: str, constructor_a
     return address
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
-
 async def deploy(private_key: str, account_address: str):
     print("\n🏗️  BITCRED PYTHON DEPLOY SCRIPT")
     print("=" * 50)
@@ -113,33 +90,28 @@ async def deploy(private_key: str, account_address: str):
         chain=StarknetChainId.SEPOLIA,
     )
 
-    # ── 1. ScoreRegistry ──────────────────────────────────────────────────────
-    # constructor(admin: ContractAddress)
     registry_address = await declare_and_deploy(
         account=account,
         contract_name="ScoreRegistry",
-        constructor_args=[int(account_address, 16)],  # admin = deployer
+        constructor_args=[int(account_address, 16)],  
     )
 
-    # ── 2. LendingPool ────────────────────────────────────────────────────────
-    # constructor(admin, score_registry, collateral_token, borrow_token, interest_rate)
     wbtc_address  = int(os.getenv("WBTC_ADDRESS",  "0x0"), 16)
     usdc_address  = int(os.getenv("USDC_ADDRESS",  "0x0"), 16)
-    interest_rate = 500  # 5% annual in basis points
+    interest_rate = 500  
 
     lending_address = await declare_and_deploy(
         account=account,
         contract_name="LendingPool",
         constructor_args=[
-            int(account_address, 16),  # admin
-            registry_address,          # score_registry
-            wbtc_address,              # collateral_token
-            usdc_address,              # borrow_token
-            interest_rate,             # initial_interest_rate
+            int(account_address, 16), 
+            registry_address,          
+            wbtc_address,              
+            usdc_address,              
+            interest_rate,             
         ],
     )
 
-    # ── 3. Save to backend/.env ───────────────────────────────────────────────
     env_path = Path(__file__).parent.parent / "backend" / ".env"
     env_path.parent.mkdir(parents=True, exist_ok=True)
 

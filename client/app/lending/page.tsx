@@ -1,18 +1,40 @@
+// client/app/lending/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAccount } from '@starknet-react/core';
-import { getLendingPosition, getLiquidity } from '@/lib/api';
-import { LendingPosition, LiquidityInfo } from '@/types';
-import { TrendingUp, TrendingDown, DollarSign, AlertTriangle, Loader2, Wallet } from 'lucide-react';
-import Link from 'next/link';
+import { useAccount, useProvider } from '@starknet-react/core';
+import { getVesuPosition, getVesuLiquidity } from '@/lib/api';
+import { VesuService } from '@/lib/vesu';
+import { TrendingUp, TrendingDown, DollarSign, AlertTriangle, Loader2, Wallet, Bitcoin } from 'lucide-react';
+
+interface VesuPosition {
+  collateral_btc: number;
+  debt_usdc: number;
+  collateral_raw: string;
+  debt_raw: string;
+}
+
+interface Liquidity {
+  available_usdc: number;
+  available_raw: string;
+}
 
 export default function LendingPage() {
-  const { address, status } = useAccount();
-  const [position, setPosition] = useState<LendingPosition | null>(null);
-  const [liquidity, setLiquidity] = useState<LiquidityInfo | null>(null);
+  const { address, account, status } = useAccount();
+  const { provider } = useProvider();
+  
+  const [position, setPosition] = useState<VesuPosition | null>(null);
+  const [liquidity, setLiquidity] = useState<Liquidity | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [txLoading, setTxLoading] = useState<string | null>(null);
+
+  // Form states
+  const [depositAmount, setDepositAmount] = useState('');
+  const [borrowAmount, setBorrowAmount] = useState('');
+  const [repayAmount, setRepayAmount] = useState('');
+
+  const vesuService = provider && account ? new VesuService(provider as any) : null;
 
   useEffect(() => {
     if (address) {
@@ -28,17 +50,77 @@ export default function LendingPage() {
 
     try {
       const [positionData, liquidityData] = await Promise.all([
-        getLendingPosition(address),
-        getLiquidity(),
+        getVesuPosition(address),
+        getVesuLiquidity(),
       ]);
       
       setPosition(positionData);
       setLiquidity(liquidityData);
     } catch (err: any) {
-      console.error('Failed to load lending data:', err);
+      console.error('Failed to load Vesu data:', err);
       setError(err.response?.data?.detail || err.message || 'Failed to load data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeposit = async () => {
+    if (!account || !vesuService || !depositAmount) return;
+    
+    setTxLoading('deposit');
+    setError(null);
+    
+    try {
+      const amount = parseFloat(depositAmount);
+      const txHash = await vesuService.depositCollateral(account as any, amount);
+      
+      alert(`Deposit successful! TX: ${txHash}`);
+      setDepositAmount('');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Deposit failed');
+    } finally {
+      setTxLoading(null);
+    }
+  };
+
+  const handleBorrow = async () => {
+    if (!account || !vesuService || !borrowAmount) return;
+    
+    setTxLoading('borrow');
+    setError(null);
+    
+    try {
+      const amount = parseFloat(borrowAmount);
+      const txHash = await vesuService.borrow(account as any, amount);
+      
+      alert(`Borrow successful! TX: ${txHash}`);
+      setBorrowAmount('');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Borrow failed');
+    } finally {
+      setTxLoading(null);
+    }
+  };
+
+  const handleRepay = async () => {
+    if (!account || !vesuService || !repayAmount) return;
+    
+    setTxLoading('repay');
+    setError(null);
+    
+    try {
+      const amount = parseFloat(repayAmount);
+      const txHash = await vesuService.repay(account as any, amount);
+      
+      alert(`Repayment successful! TX: ${txHash}`);
+      setRepayAmount('');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Repayment failed');
+    } finally {
+      setTxLoading(null);
     }
   };
 
@@ -46,13 +128,13 @@ export default function LendingPage() {
     return (
       <div className="gradient-bg min-h-screen py-12">
         <div className="container max-w-4xl">
-          <div className="text-center space-y-6">
+          <div className="glass p-16 rounded-2xl text-center space-y-6">
             <div className="w-20 h-20 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
               <Wallet className="w-10 h-10 text-muted-foreground" />
             </div>
             <h1 className="text-4xl font-bold">Connect Your Wallet</h1>
             <p className="text-lg text-muted-foreground">
-              Connect your Starknet wallet to access the lending pool
+              Connect your Starknet wallet to access Vesu lending powered by BitCred scores
             </p>
           </div>
         </div>
@@ -62,30 +144,26 @@ export default function LendingPage() {
 
   return (
     <div className="gradient-bg min-h-screen py-12">
-      <div className="container max-w-6xl">
-        {/* Header */}
+      <div className="container max-w-7xl">
         <div className="mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+            <Bitcoin className="w-4 h-4" />
+            Powered by Vesu Protocol
+          </div>
           <h1 className="text-4xl md:text-6xl font-bold gradient-text mb-4">
-            Lending Pool
+            BTC Lending Pool
           </h1>
           <p className="text-lg text-muted-foreground">
-            Borrow with personalized collateral ratios based on your Bitcoin credibility score
+            Deposit BTC, borrow USDC with BitCred-powered collateral ratios on Vesu
           </p>
         </div>
 
-        {loading && (
-          <div className="glass p-12 rounded-2xl text-center">
-            <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Loading lending data...</p>
-          </div>
-        )}
-
         {error && (
-          <div className="glass p-6 rounded-xl border-l-4 border-destructive">
+          <div className="mb-6 glass p-4 rounded-xl border-l-4 border-destructive animate-fade-in">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
               <div>
-                <div className="font-semibold">Error Loading Data</div>
+                <div className="font-semibold">Error</div>
                 <p className="text-sm text-muted-foreground mt-1">{error}</p>
                 <button
                   onClick={loadData}
@@ -98,125 +176,177 @@ export default function LendingPage() {
           </div>
         )}
 
-        {!loading && !error && position && liquidity && (
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Pool Liquidity */}
+        {loading ? (
+          <div className="glass p-12 rounded-2xl text-center">
+            <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading Vesu position...</p>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Pool Stats */}
+            <div className="lg:col-span-3 grid md:grid-cols-3 gap-6">
+              <div className="glass p-6 rounded-xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <DollarSign className="w-5 h-5 text-green-500" />
+                  <span className="text-sm text-muted-foreground">Available Liquidity</span>
+                </div>
+                <div className="text-3xl font-bold text-green-500">
+                  ${liquidity?.available_usdc.toLocaleString() || '0'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">USDC</div>
+              </div>
+
+              <div className="glass p-6 rounded-xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <Bitcoin className="w-5 h-5 text-bitcoin" />
+                  <span className="text-sm text-muted-foreground">Your Collateral</span>
+                </div>
+                <div className="text-3xl font-bold">
+                  {position?.collateral_btc.toFixed(8) || '0.00000000'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">WBTC</div>
+              </div>
+
+              <div className="glass p-6 rounded-xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <TrendingDown className="w-5 h-5 text-red-500" />
+                  <span className="text-sm text-muted-foreground">Your Debt</span>
+                </div>
+                <div className="text-3xl font-bold text-red-500">
+                  ${position?.debt_usdc.toLocaleString() || '0'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">USDC</div>
+              </div>
+            </div>
+
+            {/* Deposit */}
             <div className="glass p-6 rounded-xl">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-500" />
-                Available Liquidity
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                Deposit Collateral
               </h3>
               <div className="space-y-4">
                 <div>
-                  <div className="text-3xl font-bold text-green-500">
-                    ${liquidity.available_liquidity_usdc.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">USDC Available to Borrow</div>
+                  <label className="text-sm text-muted-foreground">Amount (WBTC)</label>
+                  <input
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="0.001"
+                    step="0.00000001"
+                    className="w-full mt-1 px-4 py-2 bg-background border border-border rounded-lg"
+                  />
                 </div>
+                <button
+                  onClick={handleDeposit}
+                  disabled={!depositAmount || txLoading === 'deposit'}
+                  className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {txLoading === 'deposit' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Depositing...
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="w-5 h-5" />
+                      Deposit
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Your Position */}
+            {/* Borrow */}
             <div className="glass p-6 rounded-xl">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-500" />
-                Your Position
+                <DollarSign className="w-5 h-5 text-blue-500" />
+                Borrow USDC
               </h3>
-              
-              {position.collateral_raw === 0 && position.debt_usd === 0 ? (
-                <div className="text-center py-6 space-y-3">
-                  <p className="text-muted-foreground">No active position</p>
-                  <Link href="/score" className="btn-primary inline-flex items-center gap-2">
-                    Get Score to Start Borrowing
-                  </Link>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">Amount (USDC)</label>
+                  <input
+                    type="number"
+                    value={borrowAmount}
+                    onChange={(e) => setBorrowAmount(e.target.value)}
+                    placeholder="100"
+                    step="0.01"
+                    className="w-full mt-1 px-4 py-2 bg-background border border-border rounded-lg"
+                  />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">Collateral</div>
-                      <div className="text-2xl font-bold">{position.collateral_raw.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">stBTC</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">Borrowed</div>
-                      <div className="text-2xl font-bold">${position.debt_usd.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">USDC</div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">Health Factor</span>
-                      <span className={`text-lg font-bold ${
-                        position.health_factor >= 1.5 ? 'text-green-500' :
-                        position.health_factor >= 1.2 ? 'text-yellow-500' :
-                        'text-red-500'
-                      }`}>
-                        {position.health_factor.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-background rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${
-                          position.health_factor >= 1.5 ? 'bg-green-500' :
-                          position.health_factor >= 1.2 ? 'bg-yellow-500' :
-                          'bg-red-500'
-                        }`}
-                        style={{ width: `${Math.min(position.health_factor * 50, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {position.is_liquidatable && (
-                    <div className="bg-destructive/10 border border-destructive rounded-lg p-3 flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                      <div className="text-sm">
-                        <div className="font-semibold text-destructive">Liquidation Risk</div>
-                        <p className="text-muted-foreground mt-1">
-                          Your position is at risk. Add collateral or repay debt to avoid liquidation.
-                        </p>
-                      </div>
-                    </div>
+                <button
+                  onClick={handleBorrow}
+                  disabled={!borrowAmount || txLoading === 'borrow'}
+                  className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {txLoading === 'borrow' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Borrowing...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="w-5 h-5" />
+                      Borrow
+                    </>
                   )}
-
-                  <div className="pt-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Collateral Ratio</span>
-                      <span className="font-semibold">{position.collateral_ratio_pct}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Max Borrow</span>
-                      <span className="font-semibold">${position.max_borrow_usd.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="lg:col-span-2 glass p-6 rounded-xl">
-              <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <button className="btn-primary flex items-center justify-center gap-2 disabled:opacity-50" disabled>
-                  <TrendingUp className="w-5 h-5" />
-                  Deposit Collateral
-                </button>
-                <button className="btn-primary flex items-center justify-center gap-2 disabled:opacity-50" disabled>
-                  <DollarSign className="w-5 h-5" />
-                  Borrow
-                </button>
-                <button className="btn-secondary flex items-center justify-center gap-2 disabled:opacity-50" disabled>
-                  <TrendingDown className="w-5 h-5" />
-                  Repay
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground mt-4 text-center">
-                Full lending functionality coming soon. Get your score first!
-              </p>
+            </div>
+
+            {/* Repay */}
+            <div className="glass p-6 rounded-xl">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-yellow-500" />
+                Repay Debt
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">Amount (USDC)</label>
+                  <input
+                    type="number"
+                    value={repayAmount}
+                    onChange={(e) => setRepayAmount(e.target.value)}
+                    placeholder="100"
+                    step="0.01"
+                    className="w-full mt-1 px-4 py-2 bg-background border border-border rounded-lg"
+                  />
+                </div>
+                <button
+                  onClick={handleRepay}
+                  disabled={!repayAmount || txLoading === 'repay'}
+                  className="w-full btn-secondary flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {txLoading === 'repay' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Repaying...
+                    </>
+                  ) : (
+                    <>
+                      <TrendingDown className="w-5 h-5" />
+                      Repay
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
+
+        {/* Info Banner */}
+        <div className="mt-6 glass p-6 rounded-xl border-l-4 border-primary">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <div className="font-semibold mb-1">Testnet Only</div>
+              <p className="text-muted-foreground">
+                This is running on Starknet Sepolia testnet with test tokens. Get testnet WBTC and USDC from faucets before using.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -6,8 +6,6 @@ use snforge_std_deprecated::{
 };
 use starknet::ContractAddress;
 
-// ─── Deploy helpers ───────────────────────────────────────────────────────────
-
 fn admin() -> ContractAddress { 'admin'.try_into().unwrap() }
 fn user() -> ContractAddress { 'user'.try_into().unwrap() }
 fn wbtc() -> ContractAddress { 'wbtc'.try_into().unwrap() }
@@ -45,8 +43,6 @@ fn setup() -> (IScoreRegistryDispatcher, ILendingPoolDispatcher) {
     let lending = deploy_lending(admin(), registry.contract_address, wbtc(), usdc());
     (registry, lending)
 }
-
-// ─── LendingPool tests ────────────────────────────────────────────────────────
 
 #[test]
 fn test_deploy_lending_pool() {
@@ -150,7 +146,6 @@ fn test_add_liquidity_non_admin_fails() {
     stop_cheat_caller_address_global();
 }
 
-// ─── Registry cooldown tests ──────────────────────────────────────────────────
 
 #[test]
 #[should_panic(expected: 'Score not registered')]

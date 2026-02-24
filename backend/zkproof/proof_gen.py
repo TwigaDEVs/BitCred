@@ -21,11 +21,8 @@ import time
 from dataclasses import dataclass
 from scoring.scorer import ScoreResult
 
-# felt252 max = 2^251 - 1  →  we use 31-byte (62 hex char) truncation
 FELT252_BYTES = 31
 
-
-# ─── BTC address → felt252 hash ───────────────────────────────────────────────
 
 def btc_address_to_felt252(btc_address: str) -> int:
     """
@@ -37,7 +34,6 @@ def btc_address_to_felt252(btc_address: str) -> int:
     the fact that the raw address is never stored on-chain.
     """
     raw = hashlib.sha256(btc_address.encode("utf-8")).digest()
-    # Take first 31 bytes → always < 2^248 < felt252 max
     truncated = raw[:FELT252_BYTES]
     return int.from_bytes(truncated, "big")
 

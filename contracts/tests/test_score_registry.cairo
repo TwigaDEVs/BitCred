@@ -5,8 +5,6 @@ use snforge_std_deprecated::{
 };
 use starknet::ContractAddress;
 
-// ─── Deploy helper ────────────────────────────────────────────────────────────
-
 fn deploy_registry(admin: ContractAddress) -> IScoreRegistryDispatcher {
     let contract = declare("ScoreRegistry").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![admin.into()]).unwrap();
@@ -21,7 +19,6 @@ fn scorer() -> ContractAddress {
     'scorer'.try_into().unwrap()
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_deploy_registry() {

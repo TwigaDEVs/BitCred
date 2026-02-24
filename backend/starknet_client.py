@@ -69,7 +69,7 @@ async def _raw_call(contract_address: int, entry_point: str, calldata: list, blo
     """
     Direct RPC call to starknet_call, bypassing starknet_py serialization issues.
     """
-    from starknet_py.cairo.felt import encode_shortstring
+    from starknet_py.hash.selector import get_selector_from_name
     
     payload = {
         "jsonrpc": "2.0",
@@ -78,7 +78,7 @@ async def _raw_call(contract_address: int, entry_point: str, calldata: list, blo
         "params": {
             "request": {
                 "contract_address": hex(contract_address),
-                "entry_point_selector": hex(encode_shortstring(entry_point)),
+                "entry_point_selector": hex(get_selector_from_name(entry_point)),
                 "calldata": [hex(c) for c in calldata]
             },
             "block_id": block_id

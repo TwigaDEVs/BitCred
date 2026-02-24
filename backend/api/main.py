@@ -26,15 +26,33 @@ from zkproof.proof_gen import (
 )
 from starknet_client import StarknetClient
 
+from vesu_intergration import VesuClient
+
+vesu = VesuClient()
+
 app = FastAPI(
     title="BitCred API",
     description="Bitcoin credit scoring for DeFi lending on Starknet",
     version="0.2.0",
 )
 
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+# Pull allowed origins from env so you can add your Vercel URL without
+# touching code. Defaults to localhost for local dev.
+#
+# On Railway, set:
+#   ALLOWED_ORIGINS=https://your-app.vercel.app,https://bitcred.vercel.app
+#
+_raw_origins = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:3001"
+)
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -45,20 +63,20 @@ starknet = StarknetClient()
 # ─── Models ───────────────────────────────────────────────────────────────────
 
 class ScoreRequest(BaseModel):
-    btc_address: str          # Raw Bitcoin address (never stored)
-    submit_onchain: bool = False  # If True, backend submits to ScoreRegistry
+    btc_address: str
+    submit_onchain: bool = False
 
 
 class ScoreResponse(BaseModel):
-    btc_address_hash: str     # felt252 hex — the on-chain key
-    score: int                # 650-850
-    tier: int                 # 1-4
+    btc_address_hash: str
+    score: int
+    tier: int
     collateral_ratio_pct: float
     hodl_sub: float
     frequency_sub: float
     stability_sub: float
-    calldata: dict            # Ready for frontend to submit, or submitted by backend
-    tx_hash: str | None       # Set if submit_onchain=True
+    calldata: dict
+    tx_hash: str | None
     message: str
 
 
@@ -94,37 +112,20 @@ async def health():
 
 @app.post("/score", response_model=ScoreResponse)
 async def compute_credit_score(req: ScoreRequest):
-    """
-    Full scoring pipeline:
-      1. Fetch BTC on-chain data (Blockstream API)
-      2. Run AI scorer (hodl / frequency / stability)
-      3. Generate ZK commitment proof
-      4. Optionally submit score to ScoreRegistry on-chain
-
-    btc_address is hashed locally — never sent or stored on-chain.
-    """
-    # 1. Fetch Bitcoin on-chain data
     try:
         wallet_data = await fetch_wallet_data(req.btc_address)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Bitcoin API error: {str(e)}")
 
-    # 2. AI scoring
     result = compute_score(wallet_data)
 
-    # 3. ZK proof + calldata
     proof = generate_proof(req.btc_address, result)
     calldata = proof_to_calldata(proof)
     calldata_json = calldata_to_dict(calldata)
 
-    # 4. Optional on-chain submission by backend scorer account
     tx_hash = None
     if req.submit_onchain:
-        # DISABLED: On-chain submission requires frontend wallet integration
-        # Users should submit scores via their Argent/Braavos wallet for better security
         tx_hash = "frontend_submission_required"
-        
-        # Optionally log the attempt
         print(f"[INFO] Score computed for {calldata.btc_address_hash}, awaiting frontend submission")
 
     tier_labels = {1: "Diamond Hands 💎", 2: "Strong Holder", 3: "Moderate Holder", 4: "New Holder"}
@@ -146,12 +147,72 @@ async def compute_credit_score(req: ScoreRequest):
     )
 
 
+@app.get("/vesu/position/{address}")
+async def get_vesu_position(address: str):
+    """Get user's Vesu lending position"""
+    try:
+        position = await vesu.get_user_position(address)
+        return position
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/vesu/liquidity")
+async def get_vesu_liquidity():
+    """Get available USDC liquidity in Vesu"""
+    try:
+        liquidity = await vesu.get_available_liquidity()
+        return liquidity
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/score/update", response_model=ScoreResponse)
+async def update_credit_score(req: ScoreRequest):
+    """Update existing Bitcoin credit score (30-day cooldown enforced)"""
+    try:
+        # Check if score exists and cooldown
+        addr_hash_int = int(btc_address_to_hex_felt(req.btc_address), 16)
+        
+        last_updated = await starknet.get_last_updated(addr_hash_int)
+        if last_updated == 0:
+            raise HTTPException(status_code=404, detail="No existing score. Use /score endpoint first.")
+        
+        import time
+        time_since = int(time.time()) - last_updated
+        if time_since < 2592000:  # 30 days
+            raise HTTPException(status_code=400, detail=f"Wait {(2592000-time_since)/86400:.1f} more days")
+        
+        # Compute new score
+        wallet_data = await fetch_wallet_data(req.btc_address)
+        result = compute_score(wallet_data)
+        proof = generate_proof(req.btc_address, result)
+        calldata = proof_to_calldata(proof)
+        
+        tx_hash = "frontend_submission_required" if req.submit_onchain else None
+        
+        tier_labels = {1: "Diamond Hands 💎", 2: "Strong Holder", 3: "Moderate Holder", 4: "New Holder"}
+        
+        return ScoreResponse(
+            btc_address_hash=proof.btc_address_hash_hex,
+            score=result.raw_score,
+            tier=result.tier,
+            collateral_ratio_pct=result.collateral_ratio_bps / 100,
+            hodl_sub=result.hodl_sub,
+            frequency_sub=result.frequency_sub,
+            stability_sub=result.stability_sub,
+            calldata=calldata_to_dict(calldata),
+            tx_hash=tx_hash,
+            message=f"Updated! {tier_labels[result.tier]} — Score {result.raw_score}",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/score/{btc_address}", response_model=RatioResponse)
 async def get_onchain_score(btc_address: str):
-    """
-    Look up an existing on-chain score by raw Bitcoin address.
-    Derives btc_address_hash locally and queries ScoreRegistry.
-    """
     addr_hash_int = int(btc_address_to_hex_felt(btc_address), 16)
     try:
         score = await starknet.get_score(addr_hash_int)
@@ -171,7 +232,6 @@ async def get_onchain_score(btc_address: str):
 
 @app.get("/position/{starknet_address}", response_model=PositionResponse)
 async def get_lending_position(starknet_address: str):
-    """Get the current LendingPool position for a Starknet address."""
     try:
         pos = await starknet.get_position(starknet_address)
     except Exception as e:
@@ -181,7 +241,6 @@ async def get_lending_position(starknet_address: str):
 
 @app.get("/liquidity")
 async def get_liquidity():
-    """Get available lending pool liquidity."""
     try:
         raw = await starknet.get_available_liquidity()
     except Exception as e:

@@ -64,4 +64,24 @@ export async function healthCheck(): Promise<{ status: string }> {
   return data;
 }
 
+// Add to client/lib/api.ts
+
+export async function getVesuPosition(starknetAddress: string) {
+  const { data } = await api.get(`/vesu/position/${starknetAddress}`);
+  return data;
+}
+
+export async function getVesuLiquidity() {
+  const { data } = await api.get('/vesu/liquidity');
+  return data;
+}
+
+export async function updateScore(btcAddress: string, submitOnchain: boolean = false) {
+  const { data } = await api.post('/score/update', {
+    btc_address: btcAddress,
+    submit_onchain: submitOnchain,
+  });
+  return data;
+}
+
 export default api;

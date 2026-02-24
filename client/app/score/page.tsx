@@ -5,7 +5,7 @@ import { useAccount, useContract } from '@starknet-react/core';
 import { BitcoinInput } from '@/components/BitcoinInput';
 import { ScoreCard } from '@/components/ScoreCard';
 import { MetricsChart } from '@/components/MetricChart';
-import { computeScore } from '@/lib/api';
+import { computeScore, updateScore } from '@/lib/api';
 import { BitcoinScore } from '@/types';
 import { CONTRACTS, REGISTRY_ABI } from '@/lib/constants';
 import { AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
@@ -25,6 +25,9 @@ export default function ScorePage() {
     abi: REGISTRY_ABI,
     provider: account
   });
+
+  const [canUpdate, setCanUpdate] = useState(false);
+  const [daysUntilUpdate, setDaysUntilUpdate] = useState(0);
 
   // const { contract } = useContract({
   //   address: CONTRACTS.REGISTRY,
@@ -91,6 +94,26 @@ export default function ScorePage() {
     }
   };
 
+  const handleUpdateScore = async (btcAddress: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await updateScore(btcAddress, false);
+      setScore(result);
+      setCanUpdate(false);
+    } catch (err: any) {
+      const msg =err.response?.data?.detail || err.message;
+      if (msg.includes('days remaining')) {
+        const days = parseFloat(msg.match(/[\d.]+/)?.[0] || '30');
+        setDaysUntilUpdate(days);
+      }
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="gradient-bg min-h-screen py-12">
       <div className="container max-w-7xl">
@@ -121,6 +144,12 @@ export default function ScorePage() {
           </div>
         )}
 
+        {canUpdate && score && (
+          <button onClick={() => handleUpdateScore(score.btc_address_hash)} className='btn-primary'>
+            Update Score
+          </button>
+        )}
+
         {txHash && (
           <div className="mb-6 glass p-4 rounded-xl border-l-4 border-green-500 animate-fade-in">
             <div className="flex items-start gap-3">
@@ -148,7 +177,7 @@ export default function ScorePage() {
             <div className="glass p-8 rounded-2xl">
               <h2 className="text-2xl font-semibold mb-6">Bitcoin Address</h2>
               <BitcoinInput 
-                onSubmit={handleComputeScore} 
+                onSubmit={score ? handleUpdateScore : handleComputeScore} 
                 loading={loading}
                 error={error}
               />
