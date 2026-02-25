@@ -3,13 +3,9 @@ import { BACKEND_API_URL } from '@/lib/constants';
 import type { BitcoinScore, LendingPosition, CollateralRatio, LiquidityInfo } from '@/types/index';
 
 const api = axios.create({
-  baseURL: BACKEND_API_URL,
+  baseURL: '/api/proxy', 
   timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
-
 /**
  * Compute Bitcoin credit score
  */
