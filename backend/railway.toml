@@ -1,0 +1,7 @@
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+startCommand = "python run.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
