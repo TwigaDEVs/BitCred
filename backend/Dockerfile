@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the backend code
 COPY . .
 
-EXPOSE $PORT 
+EXPOSE $PORT
 
-# Use shell form to expand $PORT variable
-CMD uvicorn main:app --host 0.0.0.0 --port $PORT
+# Ensure we use python to run run.py which handles PORT correctly
+CMD python run.py
