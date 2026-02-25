@@ -3,18 +3,11 @@ import { BACKEND_API_URL } from '@/lib/constants';
 import type { BitcoinScore, LendingPosition, CollateralRatio, LiquidityInfo } from '@/types/index';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api/proxy',
+  baseURL: BACKEND_API_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
-});
-
-// Add a request interceptor to log the actual URL being called (for debugging)
-api.interceptors.request.use(request => {
-  const fullUrl = `${request.baseURL || ''}${request.url || ''}`;
-  console.log('Starting Request:', fullUrl);
-  return request;
 });
 
 /**
