@@ -3,9 +3,13 @@ import { BACKEND_API_URL } from '@/lib/constants';
 import type { BitcoinScore, LendingPosition, CollateralRatio, LiquidityInfo } from '@/types/index';
 
 const api = axios.create({
-  baseURL: '/api/proxy', 
+  baseURL: '/api/proxy',  // This routes through your Next.js proxy
   timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
+
 /**
  * Compute Bitcoin credit score
  */
