@@ -2,9 +2,9 @@ import { Contract, Account, RpcProvider } from 'starknet';
 import { CONTRACTS } from './constants';
 
 export const VESU_ADDRESSES = {
-  SINGLETON: CONTRACTS.LENDING, 
-  USDC: CONTRACTS.MOCK_USDC,     
-  WBTC: CONTRACTS.MOCK_WBTC,     
+  SINGLETON: '0x2912b11bfce9fc77f199426aa2ddd9e8ce61af63eca8ddaf01a252787d7f49c',
+  USDC: '0x5bbc0a4c5963001f6bcf6212018bb4e470923b4beba3bb9c1b8f5280eb675ce',
+  WBTC: '0x7836b4f901e399a1a0d981a58055dbf33fc2b166fd2a99c0d9740a0d6bd98da',
 } as const;
 
 export const LENDING_POOL_ABI = [

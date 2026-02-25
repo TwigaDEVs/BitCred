@@ -1,6 +1,8 @@
 import axios from 'axios';
-import { BACKEND_API_URL } from '@/lib/constants';
+// import { BACKEND_API_URL } from '@/lib/constants';
 import type { BitcoinScore, LendingPosition, CollateralRatio, LiquidityInfo } from '@/types/index';
+
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: BACKEND_API_URL,

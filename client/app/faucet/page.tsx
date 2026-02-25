@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount, useContract } from '@starknet-react/core';
+import { useAccount, useContract, useProvider } from '@starknet-react/core';
 import { Droplet, Clock, CheckCircle, Loader2, Wallet } from 'lucide-react';
+import { provider } from 'starknet';
 
-const MOCK_WBTC = "0x462fe2cfe2288f319136b5e2584c838d954dd2a4f27e233639c62ff5aa10edd" ; 
-const MOCK_USDC = "0x217395fa46b21fd848d8e361e0ca3107110bb9a8893479949142392ed0ec4c6" ; 
+const MOCK_WBTC = '0x7836b4f901e399a1a0d981a58055dbf33fc2b166fd2a99c0d9740a0d6bd98da' ; 
+const MOCK_USDC = '0x5bbc0a4c5963001f6bcf6212018bb4e470923b4beba3bb9c1b8f5280eb675ce' ; 
 
 const FAUCET_ABI = [
   {
@@ -29,6 +30,7 @@ export default function FaucetPage() {
   const [claiming, setClaiming] = useState<'wbtc' | 'usdc' | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { provider } = useProvider();
 
   const { contract: wbtcContract } = useContract({
     address: MOCK_WBTC,
@@ -53,9 +55,17 @@ export default function FaucetPage() {
         const contract = token === 'wbtc' ? wbtcContract : usdcContract;
         if (!contract) throw new Error('Contract not initialized');
 
-        const result = await contract.invoke('claim', []);
+        console.log('Token:', token);
+        console.log('Contract address:', contract.address);
+        console.log('Expected WBTC:', MOCK_WBTC);
+
+        const result = await account.execute({
+            contractAddress: token === 'wbtc' ? MOCK_WBTC : MOCK_USDC,
+            entrypoint: 'claim',
+            calldata: [],
+        });
         
-        await account.waitForTransaction(result.transaction_hash);
+        await provider.waitForTransaction(result.transaction_hash);
         
         setSuccess(
         token === 'wbtc' 
