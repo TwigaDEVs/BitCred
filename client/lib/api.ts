@@ -3,8 +3,11 @@ import { BACKEND_API_URL } from '@/lib/constants';
 import type { BitcoinScore, LendingPosition, CollateralRatio, LiquidityInfo } from '@/types/index';
 
 const api = axios.create({
-  baseURL: 'https://corsproxy.io/?https://bitcred-production.up.railway.app',
+  baseURL: BACKEND_API_URL,
   timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 /**
