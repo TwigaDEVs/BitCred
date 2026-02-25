@@ -4,11 +4,14 @@ Handles deposits, borrows, repayments via Vesu V2 contracts
 """
 
 import os
+from fastapi import APIRouter, HTTPException 
 from starknet_py.contract import Contract
 from starknet_py.net.full_node_client import FullNodeClient
 from starknet_py.net.account.account import Account
 from starknet_py.net.signer.stark_curve_signer import KeyPair
 from starknet_py.net.models.chains import StarknetChainId
+
+router = APIRouter()
 
 # Vesu V2 Sepolia Testnet Addresses
 VESU_SINGLETON = "0x2545b2e5d519fc230e9cd781046d3a64e092114f07e44771e0d719d148725ef"
@@ -163,3 +166,23 @@ class VesuClient:
         except Exception as e:
             print(f"Error fetching liquidity: {e}")
             return {"available_usdc": 0, "available_raw": 0}
+
+vesu_client = VesuClient()
+
+@router.get("/position/{address}")
+async def get_vesu_position(address: str):
+    """Get user's Vesu lending position"""
+    try:
+        position = await vesu_client.get_user_position(address)
+        return position
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/liquidity")
+async def get_vesu_liquidity():
+    """Get available USDC liquidity in Vesu"""
+    try:
+        liquidity = await vesu_client.get_available_liquidity()
+        return liquidity
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

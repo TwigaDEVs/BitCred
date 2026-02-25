@@ -26,9 +26,9 @@ from zkproof.proof_gen import (
 )
 from starknet_client import StarknetClient
 
-from vesu_intergration import VesuClient
+from vesu_intergration import router as vesu_router 
 
-vesu = VesuClient()
+starknet = StarknetClient()
 
 app = FastAPI(
     title="BitCred API",
@@ -57,8 +57,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-starknet = StarknetClient()
-
+app.include_router(vesu_router, prefix="/vesu", tags=["Vesu"])
 
 # ─── Models ───────────────────────────────────────────────────────────────────
 
@@ -147,24 +146,24 @@ async def compute_credit_score(req: ScoreRequest):
     )
 
 
-@app.get("/vesu/position/{address}")
-async def get_vesu_position(address: str):
-    """Get user's Vesu lending position"""
-    try:
-        position = await vesu.get_user_position(address)
-        return position
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.get("/vesu/position/{address}")
+# async def get_vesu_position(address: str):
+#     """Get user's Vesu lending position"""
+#     try:
+#         position = await vesu.get_user_position(address)
+#         return position
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/vesu/liquidity")
-async def get_vesu_liquidity():
-    """Get available USDC liquidity in Vesu"""
-    try:
-        liquidity = await vesu.get_available_liquidity()
-        return liquidity
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.get("/vesu/liquidity")
+# async def get_vesu_liquidity():
+#     """Get available USDC liquidity in Vesu"""
+#     try:
+#         liquidity = await vesu.get_available_liquidity()
+#         return liquidity
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/score/update", response_model=ScoreResponse)
