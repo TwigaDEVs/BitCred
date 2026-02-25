@@ -37,15 +37,9 @@ app = FastAPI(
 )
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
-# Pull allowed origins from env so you can add your Vercel URL without
-# touching code. Defaults to localhost for local dev.
-#
-# On Railway, set:
-#   ALLOWED_ORIGINS=https://your-app.vercel.app,https://bitcred.vercel.app
-#
 _raw_origins = os.environ.get(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:3001"
+    "https://bit-cred.vercel.app/,http://localhost:3001"
 )
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
