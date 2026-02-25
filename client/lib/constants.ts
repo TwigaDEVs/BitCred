@@ -1,4 +1,4 @@
-export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
+export const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "https://bitcred-production.up.railway.app";
 
 export const CONTRACTS = {
   REGISTRY: "0xb922982809ddcc51b20c449d55cc5208e4890d3c809af19c377f2d65034a7d",
