@@ -4,7 +4,7 @@ Handles deposits, borrows, repayments via Vesu V2 contracts
 """
 
 import os
-from fastapi import APIRouter, HTTPException 
+from fastapi import APIRouter, HTTPException, Response 
 from starknet_py.contract import Contract
 from starknet_py.net.full_node_client import FullNodeClient
 from starknet_py.net.account.account import Account
@@ -168,6 +168,14 @@ class VesuClient:
             return {"available_usdc": 0, "available_raw": 0}
 
 vesu_client = VesuClient()
+
+@router.options("/{path:path}")
+async def options_handler(path: str, response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "https://bit-cred.vercel.app"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 @router.get("/position/{address}")
 async def get_vesu_position(address: str):
