@@ -12,8 +12,8 @@ from starknet_py.net.models.chains import StarknetChainId
 
 # Vesu V2 Sepolia Testnet Addresses
 VESU_SINGLETON = "0x2545b2e5d519fc230e9cd781046d3a64e092114f07e44771e0d719d148725ef"
-USDC_TOKEN = "0x053b40a647cedfca6ca84f542a0fe36736031905a9639a7f19a3c1e66bfd5080"  # Sepolia USDC
-WBTC_TOKEN = "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac"  # Sepolia WBTC
+USDC_TOKEN = "0x217395fa46b21fd848d8e361e0ca3107110bb9a8893479949142392ed0ec4c6"  # Sepolia USDC
+WBTC_TOKEN = "0x462fe2cfe2288f319136b5e2584c838d954dd2a4f27e233639c62ff5aa10edd"  # Sepolia WBTC
 
 RPC_URL = os.getenv("STARKNET_RPC_URL", "https://rpc.starknet-testnet.lava.build")
 
