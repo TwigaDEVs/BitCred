@@ -6,10 +6,10 @@ pub trait IERC20<TContractState> {
     fn symbol(self: @TContractState) -> felt252;
     fn decimals(self: @TContractState) -> u8;
     fn total_supply(self: @TContractState) -> u256;
-    fn balanceOf(self: @TContractState, account: ContractAddress) -> u256;
+    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
     fn allowance(self: @TContractState, owner: ContractAddress, spender: ContractAddress) -> u256;
     fn transfer(ref self: TContractState, recipient: ContractAddress, amount: u256) -> bool;
-    fn transferFrom(
+    fn transfer_from(
         ref self: TContractState,
         sender: ContractAddress,
         recipient: ContractAddress,

@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useAccount, useContract, useProvider } from '@starknet-react/core';
 import { Droplet, Clock, CheckCircle, Loader2, Wallet } from 'lucide-react';
-import { provider } from 'starknet';
+// import { provider } from 'starknet';
 
-const MOCK_WBTC = '0x7836b4f901e399a1a0d981a58055dbf33fc2b166fd2a99c0d9740a0d6bd98da' ; 
-const MOCK_USDC = '0x5bbc0a4c5963001f6bcf6212018bb4e470923b4beba3bb9c1b8f5280eb675ce' ; 
+const MOCK_WBTC = '0x2d5b244adea042de49a08126d95a1860c0a2617f37b330a8fe09de37a86559' ; 
+const MOCK_USDC = '0x4b8c72d85606ac29871d217377294d4690674459c7cf8ba73164388095e798d' ; 
 
 const FAUCET_ABI = [
   {
@@ -35,13 +35,13 @@ export default function FaucetPage() {
   const { contract: wbtcContract } = useContract({
     address: MOCK_WBTC,
     abi: FAUCET_ABI,
-    provider: account,
+    // provider: account,
   });
 
   const { contract: usdcContract } = useContract({
     address: MOCK_USDC,
     abi: FAUCET_ABI,
-    provider: account,
+    // provider: account,
   });
 
   const handleClaim = async (token: 'wbtc' | 'usdc') => {

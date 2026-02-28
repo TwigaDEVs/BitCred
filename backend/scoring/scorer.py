@@ -16,17 +16,15 @@ import time
 import json
 
 
-# ─── Data Models ──────────────────────────────────────────────────────────────
-
 @dataclass
 class UTXO:
     value_sats: int
-    age_days: int          # days since last moved
+    age_days: int         
 
 
 @dataclass
 class MonthlySnapshot:
-    month: str             # "YYYY-MM"
+    month: str             
     balance_sats: int
     tx_count: int
 
@@ -35,20 +33,20 @@ class MonthlySnapshot:
 class WalletData:
     address: str
     utxos: list[UTXO]
-    monthly_snapshots: list[MonthlySnapshot]  # Last 12 months
-    first_tx_date: Optional[str] = None       # ISO date string
+    monthly_snapshots: list[MonthlySnapshot]  
+    first_tx_date: Optional[str] = None       
 
 
 @dataclass
 class ScoreResult:
-    raw_score: int            # 650–850
-    tier: int                 # 1–4
-    collateral_ratio_bps: int # 11000 / 11500 / 12000 / 13000
+    raw_score: int            
+    tier: int                
+    collateral_ratio_bps: int 
     hodl_sub: float
     frequency_sub: float
     stability_sub: float
-    score_hash: str           # hex hash (privacy-preserving, includes tier suffix)
-    proof_input: dict         # inputs for ZK proof generation
+    score_hash: str           
+    proof_input: dict         
 
 
 # ─── Scoring Constants ────────────────────────────────────────────────────────
@@ -66,7 +64,7 @@ FREQ_IDEAL_MAX = 8
 
 # Tier thresholds
 TIERS = [
-    (800, 850, 11000, 1),  # (min, max, ratio_bps, tier_id)
+    (800, 850, 11000, 1),  
     (750, 799, 11500, 2),
     (700, 749, 12000, 3),
     (650, 699, 13000, 4),
@@ -91,7 +89,6 @@ def score_hodl_duration(utxos: list[UTXO]) -> float:
 
     weighted_score = 0.0
     for utxo in utxos:
-        # Diminishing returns: 1yr ≈ 0.39, 2yr ≈ 0.63, 4yr ≈ 0.86
         raw = 1.0 - np.exp(-utxo.age_days / 730.0)
         weighted_score += raw * (utxo.value_sats / total_value)
 
@@ -108,10 +105,10 @@ def score_tx_frequency(snapshots: list[MonthlySnapshot]) -> float:
         return 0.0
 
     monthly_scores = []
-    for snap in snapshots[-12:]:  # Last 12 months only
+    for snap in snapshots[-12:]:  
         count = snap.tx_count
         if count == 0:
-            monthly_scores.append(0.1)  # Slight credit for holding
+            monthly_scores.append(0.1)  
         elif count <= 1:
             monthly_scores.append(0.4)
         elif FREQ_IDEAL_MIN <= count <= FREQ_IDEAL_MAX:
@@ -122,7 +119,7 @@ def score_tx_frequency(snapshots: list[MonthlySnapshot]) -> float:
         elif count <= 20:
             monthly_scores.append(0.4)
         else:
-            monthly_scores.append(0.1)  # Day trader
+            monthly_scores.append(0.1)  
 
     return float(np.mean(monthly_scores))
 

@@ -29,6 +29,7 @@ pub mod LendingPool {
 
     const LIQUIDATION_THRESHOLD: u256 = 10000;
     const LIQUIDATION_BONUS_BPS: u256 = 500; // 5%
+    const BTC_PRICE_USDC: u256 = 90000_000000;
 
     #[storage]
     struct Storage {
@@ -123,7 +124,7 @@ pub mod LendingPool {
             let collateral_token = IERC20Dispatcher {
                 contract_address: self.collateral_token.read(),
             };
-            let success = collateral_token.transferFrom(caller, get_contract_address(), amount);
+            let success = collateral_token.transfer_from(caller, get_contract_address(), amount);
             assert(success, 'Collateral transfer failed');
 
             let ratio = registry.get_collateral_ratio(btc_address_hash);
@@ -149,7 +150,8 @@ pub mod LendingPool {
             self.cached_ratio.write(caller, ratio_bps.try_into().unwrap());
 
             let collateral = self.collateral_deposits.read(caller);
-            let max_borrow = (collateral * 10000) / ratio_bps;
+            let collateral_usd = (collateral * BTC_PRICE_USDC) / 100000000_u256;
+            let max_borrow = (collateral_usd * 10000) / ratio_bps;
 
             let current_debt = self._compute_total_debt(caller);
             assert(current_debt + amount <= max_borrow, 'Exceeds borrow capacity');
@@ -189,7 +191,7 @@ pub mod LendingPool {
             let borrow_token = IERC20Dispatcher {
                 contract_address: self.borrow_token.read(),
             };
-            let success = borrow_token.transferFrom(caller, get_contract_address(), repay_amount);
+            let success = borrow_token.transfer_from(caller, get_contract_address(), repay_amount);
             assert(success, 'Repay transfer failed');
 
             let principal = self.borrowed_amounts.read(caller);
@@ -240,7 +242,7 @@ pub mod LendingPool {
             let borrow_token = IERC20Dispatcher {
                 contract_address: self.borrow_token.read(),
             };
-            let success = borrow_token.transferFrom(liquidator, get_contract_address(), total_debt);
+            let success = borrow_token.transfer_from(liquidator, get_contract_address(), total_debt);
             assert(success, 'Liquidation repay failed');
 
             let bonus = (collateral * LIQUIDATION_BONUS_BPS) / 10000;
@@ -287,13 +289,17 @@ pub mod LendingPool {
                 contract_address: self.score_registry.read(),
             };
             let ratio_bps: u256 = registry.get_collateral_ratio(btc_hash).into();
-            (self.collateral_deposits.read(user) * 10000) / ratio_bps
+            let collateral = self.collateral_deposits.read(user);
+            let collateral_usd = (collateral * BTC_PRICE_USDC) / 100000000_u256;
+            (collateral_usd * 10000) / ratio_bps
         }
 
         fn get_health_factor(self: @ContractState, user: ContractAddress) -> u256 {
             let debt = self._compute_total_debt(user);
             if debt == 0 { return 99999_u256; }
-            (self.collateral_deposits.read(user) * 10000) / debt
+            let collateral = self.collateral_deposits.read(user);
+            let collateral_usd = (collateral * BTC_PRICE_USDC) / 100000000_256;
+            (collateral_usd * 10000) / debt
         }
 
         fn get_position(self: @ContractState, user: ContractAddress) -> (u256, u256, u32, bool) {
@@ -310,7 +316,7 @@ pub mod LendingPool {
             let borrow_token = IERC20Dispatcher {
                 contract_address: self.borrow_token.read(),
             };
-            let success = borrow_token.transferFrom(caller, get_contract_address(), amount);
+            let success = borrow_token.transfer_from(caller, get_contract_address(), amount);
             assert(success, 'Liquidity transfer failed');
             self.available_liquidity.write(self.available_liquidity.read() + amount);
         }

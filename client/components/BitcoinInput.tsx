@@ -14,10 +14,7 @@ export function BitcoinInput({ onSubmit, loading, error }: BitcoinInputProps) {
   const [isValid, setIsValid] = useState(true);
 
   const validateBitcoinAddress = (addr: string): boolean => {
-    // Basic Bitcoin address validation
-    // Legacy (P2PKH): starts with 1, 26-35 characters
-    // SegWit (P2SH): starts with 3, 26-35 characters  
-    // Native SegWit (Bech32): starts with bc1, 42-62 characters
+    
     const legacyRegex = /^[1][a-km-zA-HJ-NP-Z1-9]{25,34}$/;
     const segwitRegex = /^[3][a-km-zA-HJ-NP-Z1-9]{25,34}$/;
     const bech32Regex = /^(bc1)[a-z0-9]{39,87}$/;

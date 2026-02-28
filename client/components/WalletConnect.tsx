@@ -24,9 +24,8 @@ export function WalletConnect() {
     );
   }
 
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
+  const formatAddress = (addr: string) =>
+    `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
   if (status === 'connected' && address) {
     return (
@@ -55,19 +54,14 @@ export function WalletConnect() {
     );
   }
 
-  const availableConnectors = connectors.filter((c) => c.available());
-
   return (
     <div className="relative">
       <button
         onClick={() => {
-          if (availableConnectors.length === 1) {
-            connect({ connector: availableConnectors[0] });
-          } else if (availableConnectors.length > 1) {
-            setShowConnectors(!showConnectors);
+          if (connectors.length === 1) {
+            connect({ connector: connectors[0] });
           } else {
-            // No wallets available - show install message
-            setShowConnectors(true);
+            setShowConnectors(!showConnectors);
           }
         }}
         className="btn-primary flex items-center gap-2 neon-glow"
@@ -75,13 +69,13 @@ export function WalletConnect() {
         <Wallet className="w-5 h-5" />
         Connect Wallet
       </button>
-      
+
       {showConnectors && (
         <div className="absolute top-full mt-2 right-0 glass border border-border rounded-lg p-3 min-w-[250px] space-y-2 z-50">
-          {availableConnectors.length > 0 ? (
+          {connectors.length > 0 ? (
             <>
               <div className="text-sm font-medium mb-2">Select Wallet</div>
-              {availableConnectors.map((connector) => (
+              {connectors.map((connector) => (
                 <button
                   key={connector.id}
                   onClick={() => {
@@ -91,7 +85,11 @@ export function WalletConnect() {
                   className="w-full px-4 py-2 text-left hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
                 >
                   {connector.icon && (
-                    <img src={typeof connector.icon === 'string' ? connector.icon : connector.icon.light} alt={connector.name} className='w-6 h-6'/>
+                    <img
+                      src={typeof connector.icon === 'string' ? connector.icon : connector.icon.light}
+                      alt={connector.name}
+                      className="w-6 h-6"
+                    />
                   )}
                   {connector.name}
                 </button>

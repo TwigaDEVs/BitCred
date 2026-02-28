@@ -32,6 +32,7 @@ export default function LendingPage() {
   const [depositAmount, setDepositAmount] = useState('');
   const [borrowAmount, setBorrowAmount] = useState('');
   const [repayAmount, setRepayAmount] = useState('');
+  const [btcAddressHash, setBtcAddressHash] = useState('');
 
   const vesuService = provider && account ? new VesuService(provider as any) : null;
 
@@ -80,7 +81,7 @@ export default function LendingPage() {
     
     try {
       const amount = parseFloat(depositAmount);
-      const txHash = await vesuService.depositCollateral(account as any, amount);
+      const txHash = await vesuService.depositCollateral(account as any, amount, btcAddressHash);
       
       alert(`Deposit successful! TX: ${txHash}`);
       setDepositAmount('');
@@ -94,6 +95,10 @@ export default function LendingPage() {
 
   const handleBorrow = async () => {
     if (!account || !vesuService || !borrowAmount) return;
+    if (!position || position.collateral_btc === 0) {
+      setError('You must deposit collateral before borrowing.');
+      return;
+    }
     
     setTxLoading('borrow');
     setError(null);
@@ -199,7 +204,7 @@ export default function LendingPage() {
                   <span className="text-sm text-muted-foreground">Available Liquidity</span>
                 </div>
                 <div className="text-3xl font-bold text-green-500">
-                  ${liquidity?.available_usdc.toLocaleString() || '0'}
+                  ${(liquidity?.available_usdc ?? 0).toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">USDC</div>
               </div>
@@ -210,7 +215,7 @@ export default function LendingPage() {
                   <span className="text-sm text-muted-foreground">Your Collateral</span>
                 </div>
                 <div className="text-3xl font-bold">
-                  {position?.collateral_btc.toFixed(8) || '0.00000000'}
+                  {(position?.collateral_btc ?? 0).toFixed(8)}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">WBTC</div>
               </div>
@@ -221,7 +226,7 @@ export default function LendingPage() {
                   <span className="text-sm text-muted-foreground">Your Debt</span>
                 </div>
                 <div className="text-3xl font-bold text-red-500">
-                  ${position?.debt_usdc.toLocaleString() || '0'}
+                  ${(position?.debt_usdc ?? 0).toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">USDC</div>
               </div>
@@ -245,9 +250,21 @@ export default function LendingPage() {
                     className="w-full mt-1 px-4 py-2 bg-background border border-border rounded-lg"
                   />
                 </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground">BTC Address Hash (from Score page)</label>
+                  <input
+                    type="text"
+                    value={btcAddressHash}
+                    onChange={(e) => setBtcAddressHash(e.target.value)}
+                    placeholder="0x..."
+                    className="w-full mt-1 px-4 py-2 bg-background border border-border rounded-lg"
+                  />
+                </div>
+
                 <button
                   onClick={handleDeposit}
-                  disabled={!depositAmount || txLoading === 'deposit'}
+                  disabled={!depositAmount || !btcAddressHash || txLoading === 'deposit'}
                   className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {txLoading === 'deposit' ? (

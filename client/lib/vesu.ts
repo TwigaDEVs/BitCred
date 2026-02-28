@@ -1,10 +1,9 @@
 import { Contract, Account, RpcProvider } from 'starknet';
-import { CONTRACTS } from './constants';
 
 export const VESU_ADDRESSES = {
-  SINGLETON: '0x2912b11bfce9fc77f199426aa2ddd9e8ce61af63eca8ddaf01a252787d7f49c',
-  USDC: '0x5bbc0a4c5963001f6bcf6212018bb4e470923b4beba3bb9c1b8f5280eb675ce',
-  WBTC: '0x7836b4f901e399a1a0d981a58055dbf33fc2b166fd2a99c0d9740a0d6bd98da',
+  SINGLETON: '0x4b4dcc1bb1d3ec53f2edb298955a26e4a8f1c37861dde272b84a74d696817e7',
+  USDC:      '0x4b8c72d85606ac29871d217377294d4690674459c7cf8ba73164388095e798d',
+  WBTC:      '0x2d5b244adea042de49a08126d95a1860c0a2617f37b330a8fe09de37a86559',
 } as const;
 
 export const LENDING_POOL_ABI = [
@@ -13,6 +12,7 @@ export const LENDING_POOL_ABI = [
     type: 'function',
     inputs: [
       { name: 'amount', type: 'core::integer::u256' },
+      { name: 'btc_address_hash', type: 'core::felt252' },
     ],
     outputs: [],
     state_mutability: 'external',
@@ -20,18 +20,14 @@ export const LENDING_POOL_ABI = [
   {
     name: 'borrow',
     type: 'function',
-    inputs: [
-      { name: 'amount', type: 'core::integer::u256' },
-    ],
+    inputs: [{ name: 'amount', type: 'core::integer::u256' }],
     outputs: [],
     state_mutability: 'external',
   },
   {
     name: 'repay',
     type: 'function',
-    inputs: [
-      { name: 'amount', type: 'core::integer::u256' },
-    ],
+    inputs: [{ name: 'amount', type: 'core::integer::u256' }],
     outputs: [],
     state_mutability: 'external',
   },
@@ -40,8 +36,10 @@ export const LENDING_POOL_ABI = [
     type: 'function',
     inputs: [{ name: 'user', type: 'core::starknet::contract_address::ContractAddress' }],
     outputs: [
-      { name: 'collateral', type: 'core::integer::u256' },
-      { name: 'debt', type: 'core::integer::u256' },
+      { name: 'collateral',      type: 'core::integer::u256' },
+      { name: 'debt',            type: 'core::integer::u256' },
+      { name: 'ratio',           type: 'core::integer::u32' },
+      { name: 'is_liquidatable', type: 'core::bool'}
     ],
     state_mutability: 'view',
   },
@@ -53,7 +51,7 @@ export const ERC20_ABI = [
     type: 'function',
     inputs: [
       { name: 'spender', type: 'core::starknet::contract_address::ContractAddress' },
-      { name: 'amount', type: 'core::integer::u256' },
+      { name: 'amount',  type: 'core::integer::u256' },
     ],
     outputs: [{ type: 'core::bool' }],
     state_mutability: 'external',
@@ -76,117 +74,87 @@ export const ERC20_ABI = [
 
 export interface VesuPosition {
   collateral_btc: number;
-  debt_usdc: number;
+  debt_usdc:      number;
   collateral_raw: string;
-  debt_raw: string;
+  debt_raw:       string;
 }
 
 export class VesuService {
   private provider: RpcProvider;
-  
+
   constructor(provider: RpcProvider) {
     this.provider = provider;
   }
 
-  async depositCollateral(account: Account, amountBTC: number) {
-    const wbtcContract = new Contract({ 
-      abi: ERC20_ABI, 
-      address: VESU_ADDRESSES.WBTC, 
-      providerOrAccount: account
-    });
-    
-    const lendingContract = new Contract({ 
-      abi: LENDING_POOL_ABI, 
-      address: VESU_ADDRESSES.SINGLETON, 
-      providerOrAccount: account
-    });
-    
-    const amount = BigInt(Math.floor(amountBTC * 1e8)); // 8 decimals for WBTC
-    
-    // 1. Approve LendingPool to spend WBTC
-    const approveTx = await wbtcContract.approve(
-      VESU_ADDRESSES.SINGLETON, 
-      { low: amount, high: BigInt(0) }
-    );
+  async depositCollateral(account: Account, amountBTC: number, btcAddressHash: string) {
+    // ✅ v6 constructor: Contract(abi, address, providerOrAccount)
+    const wbtcContract    = new Contract({ abi: ERC20_ABI, address: VESU_ADDRESSES.WBTC, providerOrAccount: account });
+    const lendingContract = new Contract({abi: LENDING_POOL_ABI,  address:VESU_ADDRESSES.SINGLETON,  providerOrAccount: account});
+
+    const amount = BigInt(Math.floor(amountBTC * 1e8));
+
+    // 1. Approve lending pool to spend WBTC
+    const approveTx = await wbtcContract.invoke('approve', [
+      VESU_ADDRESSES.SINGLETON,
+      amount,
+    ]);
     await this.provider.waitForTransaction(approveTx.transaction_hash);
-    
-    // 2. Deposit to our LendingPool
-    const depositTx = await lendingContract.deposit_collateral(
-      { low: amount, high: BigInt(0) }
-    );
+
+    // 2. Deposit collateral
+    const depositTx = await lendingContract.invoke('deposit_collateral', [
+      BigInt(Math.floor(amountBTC * 1e8)),
+      btcAddressHash,
+    ]);
     await this.provider.waitForTransaction(depositTx.transaction_hash);
-    
+
     return depositTx.transaction_hash;
   }
 
   async borrow(account: Account, amountUSDC: number) {
-    const lendingContract = new Contract({ 
-      abi: LENDING_POOL_ABI, 
-      address: VESU_ADDRESSES.SINGLETON, 
-      providerOrAccount: account
-    });
-    
-    const amount = BigInt(Math.floor(amountUSDC * 1e6)); // 6 decimals for USDC
-    
-    const tx = await lendingContract.borrow(
-      { low: amount, high: BigInt(0) }
-    );
+    const lendingContract = new Contract({abi: LENDING_POOL_ABI,  address:VESU_ADDRESSES.SINGLETON,  providerOrAccount: account});
+
+    const amount = BigInt(Math.floor(amountUSDC * 1e6));
+
+    const tx = await lendingContract.invoke('borrow', [amount]);
     await this.provider.waitForTransaction(tx.transaction_hash);
-    
+
     return tx.transaction_hash;
   }
 
   async repay(account: Account, amountUSDC: number) {
-    const usdcContract = new Contract({ 
-      abi: ERC20_ABI, 
-      address: VESU_ADDRESSES.USDC, 
-      providerOrAccount: account
-    });
-    
-    const lendingContract = new Contract({ 
-      abi: LENDING_POOL_ABI, 
-      address: VESU_ADDRESSES.SINGLETON, 
-      providerOrAccount: account
-    });
-    
+    const usdcContract    = new Contract({ abi: ERC20_ABI, address: VESU_ADDRESSES.USDC, providerOrAccount: account });
+    const lendingContract = new Contract({abi: LENDING_POOL_ABI,  address:VESU_ADDRESSES.SINGLETON,  providerOrAccount: account});
+
     const amount = BigInt(Math.floor(amountUSDC * 1e6));
-    
-    // 1. Approve LendingPool to spend USDC
-    const approveTx = await usdcContract.approve(
-      VESU_ADDRESSES.SINGLETON, 
-      { low: amount, high: BigInt(0) }
-    );
+
+    // 1. Approve lending pool to spend USDC
+    const approveTx = await usdcContract.invoke('approve', [
+      VESU_ADDRESSES.SINGLETON,
+      amount,
+    ]);
     await this.provider.waitForTransaction(approveTx.transaction_hash);
-    
-    // 2. Repay to LendingPool
-    const repayTx = await lendingContract.repay(
-      { low: amount, high: BigInt(0) }
-    );
+
+    // 2. Repay
+    const repayTx = await lendingContract.invoke('repay', [amount]);
     await this.provider.waitForTransaction(repayTx.transaction_hash);
-    
+
     return repayTx.transaction_hash;
   }
 
   async getPosition(address: string): Promise<VesuPosition> {
-    const lendingContract = new Contract({ 
-      abi: LENDING_POOL_ABI, 
-      address: VESU_ADDRESSES.SINGLETON, 
-      providerOrAccount: this.provider
-    });
-    
-    const result = await lendingContract.get_position(address);
-    
-    // Parse the result (adjust based on your actual return format)
-    const collateral_raw = result[0]?.toString() || '0';
-    const debt_raw = result[1]?.toString() || '0';
-    
-    // Convert from base units (8 decimals for WBTC, 6 for USDC)
-    const collateral_btc = Number(collateral_raw) / 1e8;
-    const debt_usdc = Number(debt_raw) / 1e6;
-    
+    const result = await this.provider.callContract({
+      contractAddress: VESU_ADDRESSES.SINGLETON,
+      entrypoint: 'get_position',
+      calldata: [address],
+    }) as any;
+
+    // result is [collateral_low, collateral_high, debt_low, debt_high, ratio, is_liquidatable]
+    const collateral_raw = BigInt(result[0]).toString();
+    const debt_raw       = BigInt(result[2]).toString();
+
     return {
-      collateral_btc,
-      debt_usdc,
+      collateral_btc: Number(collateral_raw) / 1e8,
+      debt_usdc:      Number(debt_raw)       / 1e6,
       collateral_raw,
       debt_raw,
     };

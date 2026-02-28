@@ -67,12 +67,12 @@ export async function healthCheck(): Promise<{ status: string }> {
 }
 
 export async function getVesuPosition(starknetAddress: string) {
-  const { data } = await api.get(`/vesu/position/${starknetAddress}`);
+  const { data } = await api.get(`/position/${starknetAddress}`);
   return data;
 }
 
 export async function getVesuLiquidity() {
-  const { data } = await api.get('/vesu/liquidity');
+  const { data } = await api.get('/liquidity');
   return data;
 }
 
