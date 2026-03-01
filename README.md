@@ -1,387 +1,234 @@
 # BitCred
 
-**Dynamic Collateral Lending on Starknet | Powered by Bitcoin On-Chain Behavior Analysis**
+**Bitcoin Credit Scoring for DeFi Lending on Starknet**
 
-Privacy-preserving credit scoring for DeFi lending that rewards long-term Bitcoin holders with better borrowing terms.
-
----
-
-## 📋 Short Description
-
-BitCred is a credibility scoring system built on Starknet that analyzes Bitcoin on-chain behavior to generate dynamic collateral ratios for DeFi lending. By leveraging ZK-proofs, BitCred enables Bitcoin holders to access better lending terms (110-130% collateral ratios vs traditional 150-200%) without exposing their wallet transaction history. The system rewards long-term holders and consistent on-chain behavior with reduced collateral requirements, creating a more capital-efficient lending experience.
+BitCred analyzes real Bitcoin on-chain behavior to generate a credit score (650–850) that unlocks personalized collateral ratios in a fully on-chain lending protocol on Starknet Sepolia.
 
 ---
 
-## 🔧 How It Works
+## 🧠 The Problem
 
-### Step 1: Connect Wallet
+Every DeFi lending protocol today requires 150–200% over-collateralization — regardless of who you are. A Bitcoin holder who has never moved their coins in 5 years gets the same terms as someone who bought yesterday. There's no way to reward on-chain reputation.
 
-User connects their Bitcoin wallet via **Xverse**. No seed phrases or private keys are shared - only read-only access to on-chain transaction history.
+## 💡 The Solution
 
-### Step 2: ZK Proof Generation
+BitCred reads your Bitcoin wallet's public on-chain history, scores your behavior using an AI model, and writes that score to a Starknet smart contract. Your score determines your collateral ratio in our lending pool — better history means you need to lock less to borrow more.
 
-The system analyzes your Bitcoin wallet's on-chain history **privately** using zero-knowledge proofs. Your transaction patterns are computed without exposing specific transaction details, amounts, or counterparties.
-
-### Step 3: AI Scoring Algorithm
-
-A machine learning model evaluates three key behavioral metrics:
-
-- **Hodl Duration (40% weight)** - Measures how long you've held Bitcoin. Long-term holders score higher.
-- **Transaction Frequency (30% weight)** - Analyzes consistency of on-chain activity. Prefers steady, non-speculative behavior.
-- **Balance Stability (30% weight)** - Evaluates volatility in wallet balance over time. Lower volatility = higher score.
-
-### Step 4: Credibility Score
-
-The system generates a **credibility score** ranging from 650-850 (similar to traditional FICO scores). Only a cryptographic **hash** of your score is published on-chain to maintain privacy - the actual score remains private.
-
-### Step 5: Dynamic Collateral Ratios
-
-Your score determines your collateral requirement:
-
-| Score Range | Collateral Ratio | Example                      |
-| ----------- | ---------------- | ---------------------------- |
-| 800-850     | 110%             | Lock $110 BTC to borrow $100 |
-| 750-799     | 115%             | Lock $115 BTC to borrow $100 |
-| 700-749     | 120%             | Lock $120 BTC to borrow $100 |
-| 650-699     | 130%             | Lock $130 BTC to borrow $100 |
-
-_Compare to traditional DeFi: 150-200% collateral required regardless of reputation_
-
-### Step 6: Borrow
-
-Access lending through integrated platforms with your personalized collateral ratio. You can borrow stablecoins or other assets while keeping your Bitcoin position intact.
+| Score Range | Collateral Ratio | Borrow Power |
+|-------------|-----------------|--------------|
+| 800 – 850   | 110%            | ~91% LTV     |
+| 750 – 799   | 115%            | ~87% LTV     |
+| 700 – 749   | 120%            | ~83% LTV     |
+| 650 – 699   | 130%            | ~77% LTV     |
 
 ---
 
-## 🏗️ System Architecture
-
-### Core Components
-
-| Component                | Technology         | Function                   |
-| ------------------------ | ------------------ | -------------------------- |
-| **Wallet Connection**    | Xverse API         | Bitcoin wallet integration |
-| **ZK Proof Engine**      | Starknet ZK-SNARKs | Private on-chain analysis  |
-| **AI Scoring Module**    | ML Algorithm       | Behavioral evaluation      |
-| **Smart Contracts**      | Cairo/Starknet     | Collateral ratio logic     |
-| **Credibility Registry** | On-chain Storage   | Score hash storage         |
-
-### Architecture Diagram
+## 🔄 User Flow
 
 ```
-┌─────────────────┐
-│  Bitcoin Wallet │
-│    (Xverse)     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│   On-Chain Data Fetcher     │
-│  (Transaction History API)  │
-└────────┬────────────────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│   ZK Proof Generation       │
-│   (Private Computation)     │
-└────────┬────────────────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│   AI Scoring Engine         │
-│  • Hodl Duration (40%)      │
-│  • Tx Frequency (30%)       │
-│  • Balance Stability (30%)  │
-└────────┬────────────────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│  Credibility Score (650-850)│
-└────────┬────────────────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│   Starknet Smart Contract   │
-│   (Credibility Registry)    │
-│   • Store Score Hash        │
-│   • Assign Collateral Ratio │
-└────────┬────────────────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│    Lending Protocol         │
-│  (Demo or Partner Platform) │
-│   • Accept Collateral       │
-│   • Issue Loans             │
-│   • Manage Liquidations     │
-└─────────────────────────────┘
+1. Connect Starknet Wallet (Argent / Braavos)
+        ↓
+2. Enter Bitcoin Address → AI analyzes on-chain history
+        ↓
+3. Receive Score (650–850) → Submit to ScoreRegistry on Starknet
+        ↓
+4. Go to Faucet → Claim test WBTC + USDC (once per 24h)
+        ↓
+5. Go to Lending → Deposit WBTC collateral
+        ↓
+6. Borrow USDC at your personalized ratio
+        ↓
+7. Repay when ready
 ```
 
 ---
 
-## 🎯 Problem Statement
+## 🏗️ Architecture
 
-Current DeFi lending protocols treat all users equally, requiring **150-200% over-collateralization** regardless of on-chain reputation or holding history. This creates several inefficiencies:
+### Frontend — Next.js 16 (App Router)
+- **Wallet**: `@starknet-react/core` v5 with Argent and Braavos connectors
+- **Starknet.js** v6 for contract interactions
+- **Tailwind CSS** + custom glass morphism UI
+- Deployed on **Vercel**
 
-### Key Problems
+### Backend — FastAPI (Python)
+- Fetches real Bitcoin on-chain data via **Blockstream API**
+- Scores behavior across 3 weighted metrics using an AI model
+- Generates a `btc_address_hash` (felt252) for on-chain registration
+- Deployed on **Railway**
 
-| Issue                         | Impact                                                                              |
-| ----------------------------- | ----------------------------------------------------------------------------------- |
-| **Capital Inefficiency**      | Long-term Bitcoin holders must lock excessive collateral despite proven reliability |
-| **Privacy Concerns**          | Users hesitant to connect wallets due to transaction history exposure               |
-| **No Credit Differentiation** | Diamond hands and short-term speculators get identical terms                        |
-| **Poor Risk Assessment**      | Protocols cannot price risk accurately without behavioral data                      |
+### Smart Contracts — Cairo on Starknet Sepolia
 
----
-
-## 💡 BitCred Solution
-
-BitCred introduces a **privacy-preserving credibility scoring system** that analyzes Bitcoin wallet behavior to determine optimal collateral requirements.
-
-### Key Benefits
-
-**For Borrowers:**
-
-- Unlock 25-45% more borrowing power with good on-chain behavior
-- Maintain complete privacy - no transaction history exposed
-- Reward long-term holding strategies
-- No KYC or identity verification required
-
-**For Lenders:**
-
-- Better risk assessment without building credit infrastructure
-- Reduced default risk through behavioral analysis
-- Attract Bitcoin holders to their platform
-- Competitive advantage in DeFi lending market
-
-**For the Ecosystem:**
-
-- Bridge Bitcoin's massive community to Starknet DeFi
-- Set new standards for privacy-preserving credit scoring
-- More capital-efficient lending markets
-- Demonstrate practical ZK applications
+| Contract | Address |
+|----------|---------|
+| ScoreRegistry | `0x6dbf5a0abd0d49a077a106e42821b972528ca55feae011d7a22ad089e70fbbe` |
+| LendingPool | `0x4b4dcc1bb1d3ec53f2edb298955a26e4a8f1c37861dde272b84a74d696817e7` |
+| MockWBTC | `0x2d5b244adea042de49a08126d95a1860c0a2617f37b330a8fe09de37a86559` |
+| MockUSDC | `0x4b8c72d85606ac29871d217377294d4690674459c7cf8ba73164388095e798d` |
 
 ---
 
-## 🔐 Privacy Architecture
+## 📊 Scoring Algorithm
 
-BitCred employs multiple privacy-preserving techniques:
+The FastAPI backend computes a score from three on-chain behavioral signals:
 
-### Zero-Knowledge Proofs
+### 1. HODL Duration (40%)
+Measures how long Bitcoin has sat unspent in the wallet. Multi-year holders score highest. Recent movers score lower.
 
-Wallet analysis occurs off-chain with **ZK-SNARK proofs** verifying computation correctness without revealing transaction details. The proof confirms "this wallet meets credibility criteria X" without exposing which specific transactions contributed to the score.
+### 2. Transaction Frequency (30%)
+Optimal range is 2–8 transactions per month over a 12-month window. Consistent, non-speculative activity scores best. Day traders and dormant wallets score lower.
 
-### Hash-Only Storage
-
-Only **cryptographic hashes** of scores are stored on Starknet, not the scores themselves. This prevents score manipulation while maintaining privacy. The actual score is only known to the user.
-
-### No Identity Linking
-
-Bitcoin addresses are never permanently linked to Ethereum/Starknet addresses. Users can re-score with different wallets without creating identity trails across chains.
-
-### Data Minimization
-
-The system only accesses publicly available on-chain data. No off-chain data, KYC information, or personal details are collected or processed.
-
----
-
-## 📊 Scoring Algorithm Details
-
-The AI scoring engine processes on-chain data through three evaluation modules:
-
-### 1. Hodl Duration Analysis (40% Weight)
-
-**Calculation Method:** Weighted average of UTXO (Unspent Transaction Output) age
-
-- Analyzes when each Bitcoin in your wallet was last moved
-- Older coins receive higher scores
-- Penalizes recent acquisitions
-- Rewards multi-year holding patterns
-
-**Example:**
-
-- Wallet A: 1 BTC held for 4 years → High score
-- Wallet B: 1 BTC held for 3 months → Low score
-
-### 2. Transaction Frequency (30% Weight)
-
-**Calculation Method:** Monthly average over 12-month period
-
-- Optimal range: 2-8 transactions per month
-- Too few transactions: Possibly inactive or new wallet
-- Too many transactions: Trading/speculative behavior
-- Consistent activity preferred over sporadic bursts
-
-**Scoring:**
-
-- 2-8 tx/month → Maximum points
-- 0-1 tx/month → Reduced score (inactive)
-- 20+ tx/month → Reduced score (day trader)
-
-### 3. Balance Stability (30% Weight)
-
-**Calculation Method:** Standard deviation of monthly balances
-
-- Lower volatility = higher score
-- Measures how much your balance fluctuates
-- Penalizes frequent large deposits/withdrawals
-- Rewards steady accumulation patterns
-
-**Example:**
-
-- Stable wallet: 1.0 BTC → 1.1 BTC → 1.2 BTC (gradual growth) → High score
-- Volatile wallet: 0.5 BTC → 2.0 BTC → 0.3 BTC → 1.8 BTC → Low score
-
-### Final Score Calculation
+### 3. Balance Stability (30%)
+Measures standard deviation of monthly balances. Gradual accumulators score highest. High volatility (frequent large in/out) scores lower.
 
 ```
-Final Score = (Hodl Duration × 0.40) +
-              (Transaction Frequency × 0.30) +
-              (Balance Stability × 0.30)
-
-Score Range: 650 - 850
+Final Score = (HODL × 0.40) + (Frequency × 0.30) + (Stability × 0.30)
+Range: 650 – 850
 ```
 
 ---
 
-## 🔗 Lending Integration Strategy
+## 🔐 Privacy
 
-BitCred is the **scoring system** (like a credit bureau), not the lender itself. The lending functionality comes from either a demo contract or partner integration.
-
-### Option A: Demo Lender
-
-**Approach:** Build a minimal lending smart contract on Starknet testnet
-
-**Advantages:**
-
-- ✅ Full control over user experience
-- ✅ No external dependencies
-- ✅ Faster iteration cycles
-- ✅ Can demo complete flow with test tokens
-
-**Implementation:**
-
-- Simple Cairo smart contract accepting BitCred scores
-- Test token pool (stBTC, stUSDC) for borrowing
-- Basic liquidation logic if collateral ratio breached
-- Web interface showing full journey: connect → score → borrow → repay
-
-### Option B: Partner Protocol Integration
-
-**Approach:** Integrate BitCred into established Starknet lending protocols (zkLend, Vesu, Nostra)
-
-**Advantages:**
-
-- ✅ Immediate access to real liquidity
-- ✅ Established credibility and security
-- ✅ Focus on scoring, not lending infrastructure
-
-**Requirements:**
-
-- API/oracle integration for score verification
-- Partnership agreements
-- Platform-specific smart contract adapters
-- Joint go-to-market strategy
+- Bitcoin addresses are **never stored** — only a `keccak256` hash goes on-chain
+- All wallet analysis uses publicly available on-chain data only
+- No KYC, no identity linking between Bitcoin and Starknet addresses
+- Score hash is tied to the BTC address hash, not the Starknet wallet
 
 ---
 
-## 📝 Smart Contract Design
+## 📐 Contract Design
 
-### 1. Credibility Registry Contract
+### ScoreRegistry (`contracts/src/score_registry.cairo`)
+- `register_score(btc_address_hash, score, proof)` — called by approved scorer (backend)
+- `get_score(btc_address_hash) → u16` — returns score, 0 if not registered
+- `get_collateral_ratio(btc_address_hash) → u32` — returns ratio in BPS (11000 = 110%)
+- 30-day cooldown on score updates
 
-**Purpose:** Store and verify credibility scores on Starknet
+### LendingPool (`contracts/src/lending_pool.cairo`)
+- `deposit_collateral(amount, btc_address_hash)` — verifies score ≥ 650 before accepting WBTC
+- `borrow(amount)` — checks max borrow using BTC/USD price oracle + collateral ratio
+- `repay(amount)` — repays USDC debt with interest
+- `add_liquidity(amount)` — admin seeds USDC liquidity
+- Interest rate: 5% APR (500 BPS)
+- BTC price oracle: $90,000 (hardcoded constant for testnet)
 
-**Core Functions:**
-
-```cairo
-// Submit new credibility score
-fn submit_score(score_hash: felt252, zk_proof: Proof) -> bool
-
-// Verify ZK proof of score computation
-fn verify_score(user_address: ContractAddress, proof: Proof) -> bool
-
-// Get collateral ratio for user
-fn get_collateral_ratio(user_address: ContractAddress) -> u128
-
-// Update existing score (30-day minimum interval)
-fn update_score(new_score_hash: felt252, zk_proof: Proof) -> bool
-```
-
-**Storage:**
-
-```cairo
-// User address → Score hash mapping
-scores: LegacyMap<ContractAddress, felt252>
-
-// Score hash → Collateral ratio mapping
-collateral_ratios: LegacyMap<felt252, u128>
-
-// User address → Last update timestamp
-last_update: LegacyMap<ContractAddress, u64>
-```
-
-### 2. Demo Lending Contract
-
-**Purpose:** Simple lending protocol for testing BitCred integration
-
-**Core Functions:**
-
-```cairo
-// Deposit collateral (wrapped BTC)
-fn deposit_collateral(amount: u256) -> bool
-
-// Borrow based on credibility-adjusted ratio
-fn borrow(amount: u256) -> bool
-
-// Repay loan principal + interest
-fn repay(amount: u256) -> bool
-
-// Liquidate undercollateralized position
-fn liquidate(user_address: ContractAddress) -> bool
-
-// Withdraw collateral after repayment
-fn withdraw_collateral(amount: u256) -> bool
-```
-
-**Integration Point:**
-Queries Credibility Registry contract to fetch user's collateral ratio before processing `borrow()` requests.
+### MockWBTC / MockUSDC (`contracts/src/mock_*.cairo`)
+- Standard ERC20 with snake_case functions (`transfer_from`, `balance_of`)
+- `claim()` faucet: 0.1 WBTC or 10,000 USDC per 24 hours
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Tech Stack
 
-### Frontend
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16, TypeScript, Tailwind CSS |
+| Wallet | @starknet-react/core v5, Argent, Braavos |
+| Starknet SDK | starknet.js v6 |
+| Backend | FastAPI, Python 3.11 |
+| Bitcoin Data | Blockstream API |
+| Smart Contracts | Cairo 1, Scarb |
+| Deployment | Vercel (frontend), Railway (backend) |
+| Network | Starknet Sepolia Testnet |
 
-- **Framework:** React.js / Next.js
-- **Wallet Integration:** Xverse SDK
-- **Starknet Connection:** Starknet.js, get-starknet
-- **UI Library:** Tailwind CSS, shadcn/ui
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- Python 3.11+
+- Argent or Braavos wallet (Starknet Sepolia)
+- Scarb (for contract compilation)
+
+### Client
+
+```bash
+cd client
+npm install
+cp .env 
+# Set NEXT_PUBLIC_BACKEND_API_URL
+npm run dev
+```
 
 ### Backend
 
-- **Smart Contracts:** Cairo (Starknet native)
-- **ZK Proofs:** Starknet's built-in STARK proofs
-- **Data Indexing:** Apibara (Starknet indexer)
-- **Bitcoin Data:** Blockchain.com API, Blockstream API
+```bash
+cd backend
+pip install -r requirements.txt
+cp .env
+# Set REGISTRY_ADDRESS, SCORER_PRIVATE_KEY, SCORER_ACCOUNT_ADDR, STARKNET_RPC_URL
+python run.py
+```
 
-### AI/ML
+### Deploy Contracts
 
-- **Language:** Python
-- **Framework:** scikit-learn, TensorFlow
-- **Data Processing:** Pandas, NumPy
-- **Model Storage:** IPFS (for decentralization)
+```bash
+cd contracts
+scarb build
 
-### Infrastructure
-
-- **Deployment:** Starknet Testnet
-- **Oracle:** Chainlink (price feeds)
-- **Monitoring:** Grafana, Prometheus
-- **Analytics:** Dune Analytics
+cd scripts
+npm install
+node deploy.js        # declare + deploy all contracts
+node seed-liquidity.js # fund the lending pool with USDC
+```
 
 ---
 
-## Acknowledgments
+## 📁 Project Structure
 
-- **Starknet Foundation** - For the incredible ZK infrastructure
-- **Xverse** - For Bitcoin wallet integration tools
-- **Chainlink** - For reliable oracle services
-- **zkLend, Vesu, Nostra** - Inspiration for lending protocol design
+```
+BitCred/
+├── frontend/
+│   ├── app/
+│   │   ├── score/page.tsx      # Bitcoin scoring + on-chain submission
+│   │   ├── lending/page.tsx    # Deposit, borrow, repay
+│   │   └── faucet/page.tsx     # Claim test WBTC + USDC
+│   ├── components/
+│   │   ├── Header.tsx
+│   │   ├── WalletConnect.tsx
+│   │   └── providers/StarknetProvider.tsx
+│   └── lib/
+│       ├── vesu.ts             # VesuService: contract interactions
+│       ├── api.ts              # Backend API calls
+│       └── constants.ts        # Contract addresses + ABIs
+├── backend/
+│   └── api/
+│       ├── main.py             # FastAPI app + CORS
+│       ├── scorer.py           # AI scoring logic
+│       └── starknet_client.py  # Score submission to chain
+├── contracts/
+│   └── src/
+│       ├── score_registry.cairo
+│       ├── lending_pool.cairo
+│       ├── mock_wbtc.cairo
+│       ├── mock_usdc.cairo
+│       └── erc20.cairo
+└── scripts/
+    ├── deploy.js               # Contract deployment
+    └── seed-liquidity.js       # Pool liquidity seeding
+```
+
+---
+
+## 🎯 Hackathon Demo Script
+
+1. **Connect** Argent wallet (Starknet Sepolia)
+2. **Faucet** → Claim 0.1 WBTC + 10,000 USDC
+3. **Score** → Enter a Bitcoin address → Compute score → Submit to chain
+4. **Lend** → Paste BTC address hash → Deposit 0.01 WBTC → Borrow USDC → Repay
+
+---
+
+## 🔭 Future Work
+
+- Live BTC/USD price feed via Pragma oracle
+- ZK proof of score computation (STARK proofs)
+- Multi-chain Bitcoin analysis (Lightning, Ordinals)
+- Score portability across lending protocols
+- Score update flow with 30-day cooldown UI
+
+---
+
+## Built With ❤️ on Starknet
